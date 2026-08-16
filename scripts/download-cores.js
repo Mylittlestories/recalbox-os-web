@@ -69,7 +69,7 @@ function variantsFor(core) {
 function download(url, dest) {
   return new Promise((resolve, reject) => {
     const f = fs.createWriteStream(dest);
-    https.get(url, (res) => {
+    const req = https.get(url, (res) => {
       if (res.statusCode === 302 || res.statusCode === 301) {
         f.close();
         return download(res.headers.location, dest).then(resolve, reject);
@@ -80,8 +80,28 @@ function download(url, dest) {
       }
       res.pipe(f);
       f.on('finish', () => f.close(resolve));
-    }).on('error', (e) => { fs.unlink(dest, () => {}); reject(e); });
+    });
+    req.on('error', (e) => { fs.unlink(dest, () => {}); reject(e); });
+    // hard timeout so a hung connection can't stall the whole build
+    req.setTimeout(30000, () => {
+      req.destroy(new Error('Timeout downloading ' + url));
+    });
   });
+}
+
+// retry wrapper
+async function downloadRetry(url, dest, attempts = 4) {
+  let lastErr;
+  for (let a = 1; a <= attempts; a++) {
+    try {
+      return await download(url, dest);
+    } catch (e) {
+      lastErr = e;
+      console.warn(`  retry ${a}/${attempts} for ${url.split('/').pop()}: ${e.message}`);
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+  throw lastErr;
 }
 
 (async () => {
@@ -102,7 +122,7 @@ function download(url, dest) {
     while (i < tasks.length) {
       const t = tasks[i++];
       try {
-        await download(t.url, t.dest);
+        await downloadRetry(t.url, t.dest);
         done++;
         console.log(`  [${done}/${tasks.length}] ${t.variant}  (${(fs.statSync(t.dest).size/1024).toFixed(0)} KB)`);
       } catch (e) {
