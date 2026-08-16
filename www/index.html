@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Recalbox OS Web — Multi-System</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <div id="boot" class="screen active">
+    <div class="boot-logo"><b>&#9656;</b> RECAL<b>BOX</b> OS</div>
+    <div class="boot-sub">WEB EDITION &middot; MULTI-SYSTEM &middot; NES &middot; SNES &middot; GENESIS &middot; GB &middot; GBA &middot; PSX &middot; MORE</div>
+    <div class="boot-bar"><i></i></div>
+    <div class="boot-press">[ CLICK OR PRESS ANY KEY TO BOOT ]</div>
+    <div class="boot-log" id="bootLog">loading kernel ........ ok<br>mounting roms ......... ok<br>initializing emulators . ok</div>
+  </div>
+
+  <div id="systems" class="screen">
+    <header>
+      <div class="h-logo">&#9656; RECAL<b>BOX</b> OS</div>
+      <div class="h-spacer"></div>
+      <div class="h-hint"><span>NAV: <span class="kbd">&#8592;&#8593;&#8594;&#8595;</span></span>
+        <span>SELECT: <span class="kbd">ENTER</span></span><span>BACK: <span class="kbd">ESC</span></span></div>
+    </header>
+    <div class="sec-title">SELECT YOUR <span>SYSTEM</span></div>
+    <div class="grid" id="sysGrid"></div>
+  </div>
+
+  <div id="library" class="screen">
+    <header>
+      <div class="h-logo">&#9656; RECAL<b>BOX</b> OS</div>
+      <div class="h-spacer"></div>
+      <div class="h-hint"><span>PLAY: <span class="kbd">ENTER</span></span><span>BACK: <span class="kbd">ESC</span></span></div>
+    </header>
+    <div class="lib-wrap">
+      <div class="lib-left"><div class="sec-title" style="margin-bottom:12px">CONSOLES</div><div class="lib-cons" id="libCons"></div></div>
+      <div class="lib-main">
+        <div class="crumb" id="libCrumb"></div>
+        <div class="games" id="libGames"></div>
+        <div class="dropzone" id="drop">+ DROP A GAME FILE HERE OR CLICK TO ADD A ROM</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="player" class="screen">
+    <div class="pl-bar">
+      <button class="pl-btn" id="plBack">&#9664; BACK</button>
+      <div class="pl-title" id="plTitle"></div>
+      <div class="pl-spacer"></div>
+      <div class="pl-hints" id="plHints"></div>
+    </div>
+    <div class="pl-stage">
+      <div class="pl-loading" id="plLoading"><div class="spin"></div><div id="plLoadingTxt">BOOTING…</div></div>
+      <div id="ejsHost"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <footer>RECALBOX OS WEB &middot; POWERED BY EMULATORJS (GPL) &middot; ADD YOUR OWN GAME ROMs</footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
