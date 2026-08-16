@@ -43,7 +43,6 @@
         "dmg"
       ]
     },
-    "icon": "build/icon.png",
-    "publish": "never"
+    "icon": "build/icon.png"
   }
 }
