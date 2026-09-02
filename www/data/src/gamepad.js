@@ -1,4 +1,7 @@
 class GamepadHandler {
+    gamepads;
+    timeout;
+    listeners;
     constructor() {
         this.buttonLabels = {
             0: 'BUTTON_1',
@@ -68,7 +71,6 @@ class GamepadHandler {
                         this.dispatchEvent('axischanged', {
                             axis: axis,
                             value: newVal,
-                            oldValue: val,
                             index: gamepad.index,
                             label: this.getAxisLabel(axis, newVal),
                             gamepadIndex: gamepad.index,
@@ -162,4 +164,4 @@ class GamepadHandler {
     }
 }
 
-export { GamepadHandler };
+window.GamepadHandler = GamepadHandler;

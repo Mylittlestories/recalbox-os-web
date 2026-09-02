@@ -100,8 +100,8 @@
     "Press Keyboard": "Premi Tastiera",
     "INSERT COIN": "INSERISCI GETTONE",
     "Remove": "Rimuovi",
-    "LOADED STATE FROM BROWSER": "STATO CARICATO DAL BROWSER",
-    "SAVED STATE TO BROWSER": "STATO SALVATO NEL BROWSER",
+    "SAVE LOADED FROM BROWSER": "SALVATAGGIO CARICATO DA BROWSER",
+    "SAVE SAVED TO BROWSER": "SALVATAGGIO SALVATO SU BROWSER",
     "Join the discord": "Entra nel Discord",
     "View on GitHub": "Vedi su Github",
     "Failed to start game": "Avvio del gioco fallito",
@@ -117,8 +117,8 @@
     "EmulatorJS": "EmulatorJS",
     "Clear All": "Pulisci Tutto",
     "Take Screenshot": "Acquisisci Screenshot",
-    "Quick Save": "Salvataggio Veloce",
-    "Quick Load": "Caricamento Veloce",
+    "Quick Save": "Caricamento Veloce",
+    "Quick Load": "Salvataggio Veloce",
     "REWIND": "RIAVVOLGI",
     "Rewind Enabled (requires restart)": "Riavvolgimento Abilitato (richiede riavvio)",
     "Rewind Granularity": "Granularità Riavvolgimento",
@@ -298,6 +298,5 @@
     "DPAD_UP": "DPAD_SU",
     "DPAD_DOWN": "DPAD_GIU",
     "DPAD_LEFT": "DPAD_SINISTRA",
-    "DPAD_RIGHT": "DPAD_DESTRA",
-    "Autofire": "Autofire"
+    "DPAD_RIGHT": "DPAD_DESTRA"
 }

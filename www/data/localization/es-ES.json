@@ -104,8 +104,8 @@
     "Press Keyboard": "Presionar Teclado",
     "INSERT COIN": "INSERTE MONEDA",
     "Remove": "Eliminar",
-    "LOADED STATE FROM BROWSER": "ESTADO CARGADO DESDE EL NAVEGADOR",
-    "SAVED STATE TO BROWSER": "ESTADO GUARDADO EN EL NAVEGADOR",
+    "SAVE LOADED FROM BROWSER": "GUARDAR CARGADO DESDE EL NAVEGADOR",
+    "SAVE SAVED TO BROWSER": "GUARDAR GUARDADO EN EL NAVEGADOR",
     "Join the discord": "Únete al Discord",
     "View on GitHub": "Ver en GitHub",
     "Failed to start game": "Error al iniciar el juego",
@@ -306,6 +306,5 @@
     "DPAD_UP": "DPAD ARRIBA",
     "DPAD_DOWN": "DPAD_ABAJO",
     "DPAD_LEFT": "DPAD_IZQUIERDA",
-    "DPAD_RIGHT": "DPAD_DERECHO",
-    "Autofire": "Autofire"
+    "DPAD_RIGHT": "DPAD_DERECHO"
 }

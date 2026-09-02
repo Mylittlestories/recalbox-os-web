@@ -105,8 +105,8 @@
     "Press Keyboard": "Pressione uma tecla",
     "INSERT COIN": "Insira uma ficha",
     "Remove": "Remover",
-    "LOADED STATE FROM BROWSER": "ESTADO CARREGADO DO NAVEGADOR",
-    "SAVED STATE TO BROWSER": "ESTADO SALVO NO NAVEGADOR",
+    "SAVE LOADED FROM BROWSER": "SAVE STATE CARREGADO DO BROWSER",
+    "SAVE SAVED TO BROWSER": "SAVE STATE  ARMAZENADO NO BROWSER",
     "Join the discord": "Participar do discord",
     "View on GitHub": "Ver no GitHub",
     "Failed to start game": "Falha ao iniciar o jogo",
@@ -357,6 +357,5 @@
     "pcsx rearmed gunconadjustx": "pcsx rearmed - gunconadjustx",
     "pcsx rearmed gunconadjusty": "pcsx rearmed - gunconadjusty",
     "pcsx rearmed gunconadjustratiox": "pcsx rearmed - gunconadjustratiox",
-    "pcsx rearmed gunconadjustratioy": "pcsx rearmed - gunconadjustratioy",
-    "Autofire": "Autofire"
+    "pcsx rearmed gunconadjustratioy": "pcsx rearmed - gunconadjustratioy"
 }

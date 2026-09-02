@@ -104,8 +104,8 @@
   "Press Keyboard": "صفحه کلید را فشار دهید",
   "INSERT COIN": "سکه درج کنید",
   "Remove": "حذف کردن",
-  "LOADED STATE FROM BROWSER": "وضعیت بارگیری شده از مرورگر",
-  "SAVED STATE TO BROWSER": "وضعیت در مرورگر ذخیره شد",
+  "SAVE LOADED FROM BROWSER": "ذخیره بارگذاری شده از مرورگر",
+  "SAVE SAVED TO BROWSER": "ذخیره در مرورگر ذخیره شد",
   "Join the discord": "به دیسکورد discord بپیوندید",
   "View on GitHub": "در GitHub مشاهده کنید",
   "Failed to start game": "شروع بازی ناموفق بود",
@@ -306,6 +306,5 @@
   "DPAD_UP": "دی پد بالا",
   "DPAD_DOWN": "دی پد پایین",
   "DPAD_LEFT": "دی پد چپ",
-  "DPAD_RIGHT": "دی پد راست",
-  "Autofire": "Autofire"
+  "DPAD_RIGHT": "دی پد راست"
 }

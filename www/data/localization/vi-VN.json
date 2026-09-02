@@ -100,8 +100,8 @@
     "Press Keyboard": "Bàn phím",
     "INSERT COIN": "THÊM XU",
     "Remove": "Loại bỏ",
-    "LOADED STATE FROM BROWSER": "TRẠNG THÁI ĐÃ TẢI TỪ TRÌNH DUYỆT",
-    "SAVED STATE TO BROWSER": "TRẠNG THÁI ĐÃ LƯU VÀO TRÌNH DUYỆT",
+    "SAVE LOADED FROM BROWSER": "SAVE LOADED FROM BROWSER",
+    "SAVE SAVED TO BROWSER": "SAVE SAVED TO BROWSER",
     "Join the discord": "Tham gia thảo luận",
     "View on GitHub": "Xem trên GitHub",
     "Failed to start game": "Thất bại khởi động game",
@@ -298,6 +298,5 @@
     "DPAD_UP": "DPAD_UP",
     "DPAD_DOWN": "DPAD_DOWN",
     "DPAD_LEFT": "DPAD_LEFT",
-    "DPAD_RIGHT": "DPAD_RIGHT",
-    "Autofire": "Autofire"
+    "DPAD_RIGHT": "DPAD_RIGHT"
 }

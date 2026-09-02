@@ -99,8 +99,8 @@
     "Press Keyboard": "Πατήστε Πληκτρολόγιο",
     "INSERT COIN": "ΕΙΣΑΓΕΤΕ ΝΟΜΙΣΜΑ",
     "Remove": "Αφαιρώ",
-    "LOADED STATE FROM BROWSER": "ΦΟΡΤΩΘΗΚΕ ΚΑΤΑΣΤΑΣΗ ΑΠΟ ΤΟ BROWSER",
-    "SAVED STATE TO BROWSER": "ΑΠΟΘΗΚΕΥΤΗΚΕ ΚΑΤΑΣΤΑΣΗ ΣΤΟ BROWSER",
+    "SAVE LOADED FROM BROWSER": "ΑΠΟΘΗΚΕΥΣΗ ΦΟΡΤΩΜΕΝΟΥ ΑΠΟ ΤΟ BROWSER",
+    "SAVE SAVED TO BROWSER": "ΑΠΟΘΗΚΕΥΣΗ ΑΠΟΘΗΚΕΥΤΗΚΕ ΣΤΟ BROWSER",
     "Join the discord": "Συμμετάσχετε στη διχόνοια",
     "View on GitHub": "Προβολή στο GitHub",
     "Failed to start game": "Απέτυχε η έναρξη του παιχνιδιού",
@@ -297,6 +297,5 @@
     "DPAD_UP": "DPAD_UP",
     "DPAD_DOWN": "DPAD_DOWN",
     "DPAD_LEFT": "DPAD_LEFT",
-    "DPAD_RIGHT": "DPAD_RIGHT",
-    "Autofire": "Autofire"
+    "DPAD_RIGHT": "DPAD_RIGHT"
 }

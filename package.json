@@ -1,7 +1,7 @@
 {
   "name": "recalbox-os-web",
   "productName": "Recalbox OS Web",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Multi-system retro gaming desktop app (NES, SNES, N64, GB, GBA, Genesis, PSX, Arcade, DOS & more) powered by EmulatorJS",
   "main": "main.js",
   "scripts": {

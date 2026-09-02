@@ -6,58 +6,117 @@
 <title>Recalbox OS Web — Multi-System</title>
 <link rel="stylesheet" href="css/app.css">
 </head>
-<body>
+<body data-theme="carbon" data-view="boot">
 
+  <!-- ============ BOOT ============ -->
   <div id="boot" class="screen active">
+    <div class="boot-scan"></div>
     <div class="boot-logo"><b>&#9656;</b> RECAL<b>BOX</b> OS</div>
-    <div class="boot-sub">WEB EDITION &middot; MULTI-SYSTEM &middot; NES &middot; SNES &middot; GENESIS &middot; GB &middot; GBA &middot; PSX &middot; MORE</div>
+    <div class="boot-sub">WEB EDITION &middot; 26 SYSTEMS &middot; NES &middot; SNES &middot; N64 &middot; GENESIS &middot; GB &middot; GBA &middot; PSX &middot; ARCADE &middot; DOS &middot; MORE</div>
     <div class="boot-bar"><i></i></div>
-    <div class="boot-press">[ CLICK OR PRESS ANY KEY TO BOOT ]</div>
-    <div class="boot-log" id="bootLog">loading kernel ........ ok<br>mounting roms ......... ok<br>initializing emulators . ok</div>
+    <div class="boot-press">[ CLICK · PRESS ANY KEY · OR ANY GAMEPAD BUTTON ]</div>
+    <div class="boot-log" id="bootLog">loading kernel ........ ok<br>mounting library ...... <span class="dots">...</span><br>initializing emulators . ok</div>
   </div>
 
+  <!-- ============ SYSTEM VIEW ============ -->
   <div id="systems" class="screen">
     <header>
-      <div class="h-logo">&#9656; RECAL<b>BOX</b> OS</div>
+      <div class="h-logo"><span class="h-mark">&#9656;</span> RECAL<b>BOX</b> OS <span class="h-tag">WEB</span></div>
       <div class="h-spacer"></div>
-      <div class="h-hint"><span>NAV: <span class="kbd">&#8592;&#8593;&#8594;&#8595;</span></span>
-        <span>SELECT: <span class="kbd">ENTER</span></span><span>BACK: <span class="kbd">ESC</span></span></div>
+      <div class="h-count" id="sysCount"></div>
+      <div class="h-actions">
+        <button class="hb" id="sysSearch" title="Search all games (F)"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span>SEARCH</span></button>
+        <button class="hb" id="sysSettings" title="Settings (S)"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.5 7.5 0 0 0-1.7-1L15 3H9l-.4 2.7a7.5 7.5 0 0 0-1.7 1l-2.5-1-2 3.5L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.5 7.5 0 0 0 1.7 1L9 21h6l.4-2.7a7.5 7.5 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg><span>SETTINGS</span></button>
+        <button class="hb" id="sysHelp" title="Help (H)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5V14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2"/></svg><span>HELP</span></button>
+      </div>
     </header>
-    <div class="sec-title">SELECT YOUR <span>SYSTEM</span></div>
-    <div class="grid" id="sysGrid"></div>
+    <div class="sys-wrap">
+      <div class="sec-title">SELECT YOUR <span>SYSTEM</span></div>
+      <div class="grid" id="sysGrid"></div>
+    </div>
+    <div class="sys-info" id="sysInfo"></div>
   </div>
 
+  <!-- ============ GAME VIEW ============ -->
   <div id="library" class="screen">
     <header>
-      <div class="h-logo">&#9656; RECAL<b>BOX</b> OS</div>
+      <button class="hb back" id="libBack" title="Back (ESC)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>SYSTEMS</span></button>
+      <div class="crumb" id="libCrumb"></div>
       <div class="h-spacer"></div>
-      <div class="h-hint"><span>PLAY: <span class="kbd">ENTER</span></span><span>BACK: <span class="kbd">ESC</span></span></div>
+      <div class="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><input id="libSearch" type="search" placeholder="FILTER GAMES… (F)" autocomplete="off" spellcheck="false"></div>
+      <div class="h-actions">
+        <button class="hb" id="libSort" title="Change sort (O)"><svg viewBox="0 0 24 24"><path d="M4 7h10M4 12h7M4 17h4M17 6v12M14 15l3 3 3-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>SORT</span></button>
+        <button class="hb" id="libView" title="Grid / list (V)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span>VIEW</span></button>
+        <button class="hb" id="libRandom" title="Random game (R)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.6" fill="#0b0b10"/><circle cx="16" cy="8" r="1.6" fill="#0b0b10"/><circle cx="12" cy="12" r="1.6" fill="#0b0b10"/><circle cx="8" cy="16" r="1.6" fill="#0b0b10"/><circle cx="16" cy="16" r="1.6" fill="#0b0b10"/></svg><span>RANDOM</span></button>
+        <button class="hb primary" id="libAdd" title="Add games (A)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg><span>ADD GAMES</span></button>
+      </div>
     </header>
     <div class="lib-wrap">
-      <div class="lib-left"><div class="sec-title" style="margin-bottom:12px">CONSOLES</div><div class="lib-cons" id="libCons"></div></div>
+      <aside class="lib-left">
+        <div class="sec-title small">SYSTEMS</div>
+        <div class="lib-cons" id="libCons"></div>
+      </aside>
       <div class="lib-main">
-        <div class="crumb" id="libCrumb"></div>
+        <div class="lib-sysbar" id="libSysBar"></div>
+        <div class="lib-stats" id="libStats"></div>
         <div class="games" id="libGames"></div>
-        <div class="dropzone" id="drop">+ DROP A GAME FILE HERE OR CLICK TO ADD A ROM</div>
+        <div class="lib-empty" id="libEmpty" style="display:none"></div>
+      </div>
+    </div>
+    <div class="lib-detail" id="libDetail"></div>
+  </div>
+
+  <!-- ============ PLAYER ============ -->
+  <div id="player" class="screen">
+    <div class="pl-bar">
+      <button class="pl-btn" id="plBack" title="Quit game (ESC)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg> QUIT</button>
+      <span class="pl-sys" id="plSys"></span>
+      <div class="pl-title" id="plTitle"></div>
+      <div class="pl-spacer"></div>
+      <div class="pl-hints"><span><i class="kbd">F2</i>SAVE</span><span><i class="kbd">F4</i>LOAD</span><span><i class="kbd">F9</i>REWIND</span><span><i class="kbd" id="plFF">SPACE</i>FAST-FWD</span><span><i class="kbd">F8</i>SHOT</span><span><i class="kbd">F1</i>MENU</span></div>
+      <button class="pl-btn accent" id="plMenu" title="Game Control Center (CTRL+F12)"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg> CONTROL CENTER</button>
+    </div>
+    <div class="pl-stage">
+      <div class="pl-loading" id="plLoading">
+        <div class="pl-load-card">
+          <div class="pl-load-ic" id="plLoadingSys"></div>
+          <div class="pl-load-name" id="plLoadingName"></div>
+          <div class="pl-load-sub" id="plLoadingSub"></div>
+          <div class="spin"></div>
+          <div class="pl-load-txt" id="plLoadingTxt">BOOTING…</div>
+          <div class="pl-load-tip" id="plLoadingTip"></div>
+        </div>
+      </div>
+      <div id="ejsHost"></div>
+      <div class="pl-hud" id="plHud"></div>
+
+      <!-- Game Control Center overlay (RetroBat: Hotkey + B / CTRL+F12) -->
+      <div id="cc">
+        <div class="cc-box">
+          <div class="cc-head">
+            <div><div class="cc-title" id="ccTitle"></div><div class="cc-meta" id="ccMeta"></div></div>
+            <button class="cc-x" id="ccClose" title="Resume (ESC)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="cc-grid" id="ccGrid"></div>
+          <div class="cc-tattoo"><b>CONTROLS</b> <span id="ccTattoo"></span></div>
+          <div class="cc-foot"><span><i class="kbd">←→↑↓</i>MOVE</span><span><i class="kbd">ENTER / A</i>SELECT</span><span><i class="kbd">ESC / B</i>RESUME</span><span><i class="kbd">Q</i>QUIT</span></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div id="player" class="screen">
-    <div class="pl-bar">
-      <button class="pl-btn" id="plBack">&#9664; BACK</button>
-      <div class="pl-title" id="plTitle"></div>
-      <div class="pl-spacer"></div>
-      <div class="pl-hints" id="plHints"></div>
-    </div>
-    <div class="pl-stage">
-      <div class="pl-loading" id="plLoading"><div class="spin"></div><div id="plLoadingTxt">BOOTING…</div></div>
-      <div id="ejsHost"></div>
+  <!-- ============ GENERIC MODAL (menus / dialogs) ============ -->
+  <div id="modal">
+    <div class="modal-box" role="dialog">
+      <div class="modal-head"><div><div class="modal-title" id="modalTitle"></div><div class="modal-sub" id="modalSub"></div></div><button class="cc-x" id="modalClose" title="Close (ESC)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-foot"><span><i class="kbd">↑↓</i>MOVE</span><span><i class="kbd">←→</i>CHANGE</span><span><i class="kbd">ENTER / A</i>SELECT</span><span><i class="kbd">ESC / B</i>CLOSE</span></div>
     </div>
   </div>
 
+  <div id="dropOverlay"><div><div class="big">+</div>DROP GAME FILES TO ADD THEM TO THE LIBRARY<br><small>the system is detected from the file extension</small></div></div>
   <div id="toast"></div>
-  <footer>RECALBOX OS WEB &middot; POWERED BY EMULATORJS (GPL) &middot; ADD YOUR OWN GAME ROMs</footer>
+  <footer><span id="footCount"></span><span class="f-spacer"></span><span class="f-hints" id="footHints"></span><span class="f-brand">POWERED BY EMULATORJS (GPL)</span></footer>
 
   <script src="js/app.js"></script>
 </body>

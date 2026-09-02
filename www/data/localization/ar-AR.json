@@ -99,8 +99,8 @@
     "Press Keyboard": "اضغط على لوحة المفاتيح",
     "INSERT COIN": "إدراج عملة",
     "Remove": "يزيل",
-    "LOADED STATE FROM BROWSER": "حالة تحميل من المتصفح",
-    "SAVED STATE TO BROWSER": "الحالة المحفوظة في المتصفح",
+    "SAVE LOADED FROM BROWSER": "وفر محملًا من المتصفح",
+    "SAVE SAVED TO BROWSER": "تم الحفظ في المتصفح",
     "Join the discord": "انضم إلى الفتنة",
     "View on GitHub": "عرض على جيثب",
     "Failed to start game": "فشل بدء اللعبة",
@@ -297,6 +297,5 @@
     "DPAD_UP": "DPAD_UP",
     "DPAD_DOWN": "DPAD_DOWN",
     "DPAD_LEFT": "DPAD_LEFT",
-    "DPAD_RIGHT": "DPAD_RIGHT",
-    "Autofire": "Autofire"
+    "DPAD_RIGHT": "DPAD_RIGHT"
 }

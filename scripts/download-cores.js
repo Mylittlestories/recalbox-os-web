@@ -106,6 +106,7 @@ async function downloadRetry(url, dest, attempts = 4) {
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
+  fs.mkdirSync(path.join(OUT, 'reports'), { recursive: true });
   const tasks = [];
   for (const core of cores) {
     for (const variant of variantsFor(core)) {
@@ -113,6 +114,16 @@ async function downloadRetry(url, dest, attempts = 4) {
       if (fs.existsSync(dest)) { console.log('skip (exists) ' + variant); continue; }
       tasks.push({ url: BASE + variant, dest, variant });
     }
+    // Per-core build report: EmulatorJS uses it to decide when a cached core is stale and which
+    // WebGL variant to prefer. Without it, it logs a warning and disables core caching (slower starts).
+    const rep = 'reports/' + core + '.json';
+    const repDest = path.join(OUT, rep);
+    if (!fs.existsSync(repDest)) tasks.push({ url: BASE + rep, dest: repDest, variant: rep });
+  }
+  // PPSSPP needs its asset pack (fonts, shaders, PPGe atlas) — it is fetched from cores/ at runtime.
+  if (cores.has('ppsspp')) {
+    const dest = path.join(OUT, 'ppsspp-assets.zip');
+    if (!fs.existsSync(dest)) tasks.push({ url: BASE + 'ppsspp-assets.zip', dest, variant: 'ppsspp-assets.zip' });
   }
   console.log(`Downloading ${tasks.length} core files...`);
   let done = 0, failed = 0;

@@ -22,7 +22,7 @@
  *    ],
  *  }
  */
-export const EJS_SHADERS = {
+window.EJS_SHADERS = {
     //https://github.com/libretro/glsl-shaders/blob/master/scalehq/2xScaleHQ.glslp
     "2xScaleHQ.glslp": {
         "shader": {
