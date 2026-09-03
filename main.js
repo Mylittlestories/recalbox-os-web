@@ -1,8 +1,43 @@
-const { app, BrowserWindow, Menu, protocol, shell } = require('electron');
+const { app, BrowserWindow, Menu, protocol, session, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
 const WWW_DIR = path.join(__dirname, 'www');
+const CORES_DIR = path.join(WWW_DIR, 'data', 'cores');
+
+/*
+ * OFFLINE BY DESIGN
+ * -----------------
+ * Like RetroArch / RetroPie, every emulator core ships inside the application
+ * (www/data/cores/*.data — bundled by scripts/download-cores.js at build time).
+ * The renderer only ever talks to the app:// scheme below; any other protocol
+ * (http, https, ws, wss, ftp…) is refused at the session level, so the app works
+ * with no network connection at all and never "phones home".
+ */
+const ALLOWED_URL = /^(app:\/\/recalbox\/|blob:|data:|devtools:|chrome-extension:)/i;
+const CSP = [
+  "default-src 'self' app://recalbox blob: data:",
+  "script-src 'self' app://recalbox blob: 'wasm-unsafe-eval' 'unsafe-eval'",
+  "style-src 'self' app://recalbox 'unsafe-inline'",
+  "img-src 'self' app://recalbox blob: data:",
+  "media-src 'self' app://recalbox blob: data:",
+  "font-src 'self' app://recalbox data:",
+  "worker-src 'self' app://recalbox blob:",
+  "connect-src 'self' app://recalbox blob: data:",
+  "frame-src 'none'",
+  "object-src 'none'",
+].join('; ');
+
+/** Count the bundled cores so a broken/incomplete build is visible in the log. */
+function coreInventory() {
+  try {
+    const files = fs.readdirSync(CORES_DIR).filter((f) => f.endsWith('-wasm.data'));
+    const bytes = files.reduce((a, f) => a + fs.statSync(path.join(CORES_DIR, f)).size, 0);
+    return { count: files.length, bytes };
+  } catch (e) {
+    return { count: 0, bytes: 0 };
+  }
+}
 
 // Custom scheme must be registered as privileged BEFORE app is ready.
 protocol.registerSchemesAsPrivileged([
@@ -126,6 +161,10 @@ function createWindow() {
       sandbox: true,
       // Gamepads / audio should keep running when the window loses focus briefly
       backgroundThrottling: false,
+      // Booting with a gamepad button gives no "user activation" — allow audio to start anyway.
+      autoplayPolicy: 'no-user-gesture-required',
+      // Chromium's spellchecker downloads dictionaries from Google's CDN — not wanted in an offline app.
+      spellcheck: false,
     },
   });
   Menu.setApplicationMenu(null);
@@ -144,8 +183,29 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // --- Network lockdown: nothing but our own app:// scheme may be requested. ---
+  const ses = session.defaultSession;
+  ses.webRequest.onBeforeRequest((details, callback) => {
+    if (ALLOWED_URL.test(details.url)) return callback({});
+    console.warn('[offline] blocked network request:', details.url);
+    callback({ cancel: true });
+  });
+  // No proxy, no DNS-over-HTTPS lookups, no Chromium "network prediction" background traffic.
+  ses.setProxy({ mode: 'direct' }).catch(() => {});
+  ses.setPermissionRequestHandler((wc, permission, cb) => {
+    // gamepads / fullscreen / pointer lock don't go through here; deny everything that does (geolocation, notifications…)
+    cb(false);
+  });
+
+  const inv = coreInventory();
+  if (inv.count === 0) {
+    console.warn('[cores] No emulator cores found in ' + CORES_DIR + ' — run `npm run cores` once (needs internet), then restart.');
+  } else {
+    console.log(`[cores] ${inv.count} core files bundled (${(inv.bytes / 1048576).toFixed(0)} MB) — running fully offline.`);
+  }
+
   // Serve files from www/ over the app:// scheme with COOP/COEP so that
-  // SharedArrayBuffer-based threading cores (PSP, DOSBox, 3DS) can load.
+  // SharedArrayBuffer-based threading cores (PSP, DOSBox) can load.
   protocol.handle('app', (request) => {
     const url = new URL(request.url);
     let p = decodeURIComponent(url.pathname);
@@ -162,7 +222,7 @@ app.whenReady().then(() => {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Resource-Policy': 'same-origin',
-      'Access-Control-Allow-Origin': '*',
+      'Content-Security-Policy': CSP,
     });
     if (request.method === 'HEAD') {
       return fs.promises

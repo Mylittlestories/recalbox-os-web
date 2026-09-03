@@ -117,6 +117,62 @@
   function saveSettings(){ localStorage.setItem("rbw-settings",JSON.stringify(settings)); }
   loadSettings();
 
+  /* ================= bundled emulator cores (offline) =================
+     Every core is shipped inside the app (www/data/cores/, see scripts/download-cores.js)
+     exactly like RetroArch/RetroPie ship theirs — nothing is downloaded at runtime.
+     CORE_FILES lists the files each core needs; the runtime picks one of them
+     (WebGL2 build, -legacy WebGL1 build, -thread pthread build). */
+  var CORE_FILES={
+    fceumm:["fceumm-wasm.data","fceumm-legacy-wasm.data"], nestopia:["nestopia-wasm.data","nestopia-legacy-wasm.data"],
+    snes9x:["snes9x-wasm.data","snes9x-legacy-wasm.data"], mupen64plus_next:["mupen64plus_next-wasm.data","mupen64plus_next-legacy-wasm.data"],
+    gambatte:["gambatte-wasm.data","gambatte-legacy-wasm.data"], mgba:["mgba-wasm.data","mgba-legacy-wasm.data"],
+    melonds:["melonds-wasm.data","melonds-legacy-wasm.data"], pcsx_rearmed:["pcsx_rearmed-wasm.data","pcsx_rearmed-legacy-wasm.data"],
+    ppsspp:["ppsspp-thread-wasm.data","ppsspp-assets.zip"], genesis_plus_gx:["genesis_plus_gx-wasm.data","genesis_plus_gx-legacy-wasm.data"],
+    smsplus:["smsplus-wasm.data","smsplus-legacy-wasm.data"], yabause:["yabause-wasm.data","yabause-legacy-wasm.data"],
+    stella2014:["stella2014-wasm.data","stella2014-legacy-wasm.data"], a5200:["a5200-wasm.data","a5200-legacy-wasm.data"],
+    prosystem:["prosystem-wasm.data","prosystem-legacy-wasm.data"], handy:["handy-wasm.data","handy-legacy-wasm.data"],
+    virtualjaguar:["virtualjaguar-wasm.data","virtualjaguar-legacy-wasm.data"], mednafen_pce:["mednafen_pce-wasm.data","mednafen_pce-legacy-wasm.data"],
+    mednafen_wswan:["mednafen_wswan-wasm.data","mednafen_wswan-legacy-wasm.data"], mednafen_ngp:["mednafen_ngp-wasm.data","mednafen_ngp-legacy-wasm.data"],
+    vice_x64sc:["vice_x64sc-wasm.data","vice_x64sc-legacy-wasm.data"], puae:["puae-wasm.data","puae-legacy-wasm.data"],
+    fbneo:["fbneo-wasm.data","fbneo-legacy-wasm.data"], mame2003_plus:["mame2003_plus-wasm.data","mame2003_plus-legacy-wasm.data"],
+    dosbox_pure:["dosbox_pure-thread-wasm.data","dosbox_pure-thread-legacy-wasm.data"]
+  };
+  var CORE_ALT={nestopia:"nes"};   // alternative cores selectable in the in-game menu (Core → requires restart)
+  var CORES={ready:false,files:{},missing:[],bytes:0,version:""};   // files[name]=size|false
+  function coreFileName(sys){ return coreLabel(sys).replace(/-/g,"_"); }
+  function coreInstalled(sys){ if(!CORES.ready||sys.collection)return true; var fs=CORE_FILES[coreFileName(sys)]||[]; return fs.every(function(f){ return !!CORES.files[f]; }); }
+  function coreStatus(sys){
+    var name=coreFileName(sys), fs=CORE_FILES[name]||[], miss=fs.filter(function(f){ return !CORES.files[f]; });
+    return {core:name,files:fs,missing:miss,ok:miss.length===0,size:fs.reduce(function(a,f){ return a+(CORES.files[f]||0); },0)};
+  }
+  // HEAD every core file once at boot (local files, no network) → precise inventory even without a manifest
+  var coresReady=(function(){
+    var names=[]; Object.keys(CORE_FILES).forEach(function(c){ CORE_FILES[c].forEach(function(f){ if(names.indexOf(f)<0) names.push(f); }); });
+    var probe=function(f){ return fetch("data/cores/"+f,{method:"HEAD",cache:"no-store"}).then(function(r){ var len=parseInt(r.headers.get("content-length")||"0",10); return r.ok?(len||1):false; }).catch(function(){ return false; }); };
+    return fetch("data/cores/manifest.json",{cache:"no-store"}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }).then(function(m){
+      if(m&&m.ejsVersion) CORES.version=m.ejsVersion;
+      return Promise.all(names.map(probe)).then(function(res){
+        names.forEach(function(f,i){ CORES.files[f]=res[i]; if(res[i]) CORES.bytes+=res[i]; else CORES.missing.push(f); });
+        CORES.ready=true; return CORES;
+      });
+    });
+  })();
+
+  /* ---- offline guard: the app must never reach the network. EmulatorJS 4.2.3 has two places
+     where it would (an update check against its CDN and a "failsafe" that downloads a core
+     from the CDN when the local file is missing). Both are neutralised here, at fetch/XHR level,
+     so a missing core is reported as such instead of being silently fetched (Electron blocks
+     these requests as well — this is the belt to main.js's braces). */
+  (function offlineGuard(){
+    var isRemote=function(u){ try{ var x=new URL(String(u),location.href); return /^https?:$/.test(x.protocol) && x.origin!==location.origin; }catch(e){ return false; } };
+    var _fetch=window.fetch;
+    window.fetch=function(input,init){ var u=(input&&input.url)||input; if(isRemote(u)){ trace("blocked fetch",String(u)); console.warn("[offline] blocked network request:",String(u)); return Promise.resolve(new Response(null,{status:503,statusText:"offline"})); } return _fetch.apply(this,arguments); };
+    var _open=XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open=function(m,u){ if(isRemote(u)){ trace("blocked xhr",String(u)); console.warn("[offline] blocked network request:",String(u)); this.__rbwBlocked=true; } return _open.apply(this,arguments); };
+    var _send=XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send=function(){ if(this.__rbwBlocked){ var x=this; setTimeout(function(){ try{ x.dispatchEvent(new Event("error")); }catch(e){} },0); return; } return _send.apply(this,arguments); };
+  })();
+
   /* ================= icons ================= */
   function consoleIcon(color,label){
     return '<svg viewBox="0 0 24 24"><rect x="2.4" y="6" width="19.2" height="12" rx="2.5" fill="'+color+'"/><rect x="4.2" y="7.8" width="15.6" height="6.6" rx="1.2" fill="#0b0b10"/><text x="12" y="12.6" text-anchor="middle" font-size="4.2" font-family="monospace" font-weight="bold" fill="#fff">'+label+'</text></svg>';
@@ -231,13 +287,15 @@
   byId("boot").addEventListener("click",triggerBoot);
   document.addEventListener("keydown",triggerBoot);
   // load library while boot screen is displayed
-  var libReady=Promise.all([DB.all("roms"),DB.all("bios"),DB.all("shots")]).then(function(r){
+  var libReady=Promise.all([DB.all("roms"),DB.all("bios"),DB.all("shots"),coresReady.catch(function(){})]).then(function(r){
     ROMS=(r[0]||[]).map(function(x){ x.fav=!!x.fav; x.playCount=x.playCount||0; x.playTime=x.playTime||0; return x; });
     (r[1]||[]).forEach(function(b){ BIOS[b.key]=b; });
     (r[2]||[]).forEach(function(s){ try{ SHOTS[s.id]=URL.createObjectURL(s.blob); }catch(e){} });
     // bundled free demo game
     if(!ROMS.some(function(x){return x.embedded;})) ROMS.unshift({id:"embedded-2048",sysId:"nes",name:"2048",fileName:"2048.nes",url:"roms/2048.nes",embedded:true,size:24592,added:0,playCount:0,playTime:0,fav:false});
-    byId("bootLog").innerHTML="loading kernel ........ ok<br>mounting library ...... "+(ROMS.length)+" game"+(ROMS.length===1?"":"s")+"<br>initializing emulators . ok";
+    var nCores=Object.keys(CORE_FILES).length, okCores=Object.keys(CORE_FILES).filter(function(c){ return CORE_FILES[c].every(function(f){ return !!CORES.files[f]; }); }).length;
+    byId("bootLog").innerHTML="loading kernel ........ ok<br>mounting library ...... "+(ROMS.length)+" game"+(ROMS.length===1?"":"s")+"<br>loading emulators ..... "+okCores+"/"+nCores+" cores"+(CORES.bytes?" · "+fmtBytes(CORES.bytes):"")+(okCores===nCores?" · offline ready":' · <span class="warn">'+(nCores-okCores)+" missing</span>");
+    if(okCores<nCores) console.warn("Missing emulator cores:",CORES.missing.join(", "),"— run `npm run cores` to bundle them.");
     byId("boot").classList.add("ready");
     if(view==="systems") renderSystems();
   }).catch(function(e){ console.warn("DB load failed",e); byId("boot").classList.add("ready"); });
@@ -292,10 +350,11 @@
       }
       var n=countGames(s.id);
       var card=document.createElement("div");
-      card.className="card"+(s.collection?" coll":"")+(n===0&&!s.collection?" empty":"");
+      var noCore=!s.collection&&!coreInstalled(s);
+      card.className="card"+(s.collection?" coll":"")+(n===0&&!s.collection?" empty":"")+(noCore?" nocore":"");
       card.setAttribute("data-idx",i);
       card.style.setProperty("--c",s.color);
-      card.innerHTML='<span class="badge">'+esc(s.short)+'</span><div class="icon">'+s.icon+'</div><h3>'+esc(s.name)+'</h3><p>'+(s.collection?"":esc(s.note)+"<br>")+'<b>'+n+'</b> game'+(n===1?"":"s")+'</p>';
+      card.innerHTML='<span class="badge">'+esc(s.short)+'</span>'+(noCore?'<span class="nocore-tag">CORE MISSING</span>':'')+'<div class="icon">'+s.icon+'</div><h3>'+esc(s.name)+'</h3><p>'+(s.collection?"":esc(s.note)+"<br>")+'<b>'+n+'</b> game'+(n===1?"":"s")+'</p>';
       card.addEventListener("click",function(){ focus.systems=i; blip("select"); openLibrary(s.id); });
       card.addEventListener("mouseenter",function(){ if(hoverOK()) focusSystem(i,false,true); });
       g.appendChild(card);
@@ -312,7 +371,7 @@
     var el=$('#sysGrid .card[data-idx="'+i+'"]');
     if(el&&scroll!==false) el.scrollIntoView({block:"nearest",behavior:"smooth"});
     var s=sysList[i];
-    byId("sysInfo").innerHTML = s.collection ? '<b>'+esc(s.name.toUpperCase())+'</b>' : '<b>'+esc(s.name.toUpperCase())+'</b> · '+esc(s.maker||"")+' · '+(s.year||"")+' · core: <i>'+esc(coreLabel(s))+'</i>'+(s.bios?' · <span class="'+(biosStatus(s).missingReq?'warn':'ok')+'">BIOS '+(biosStatus(s).missingReq?'MISSING':'OK')+'</span>':'');
+    byId("sysInfo").innerHTML = s.collection ? '<b>'+esc(s.name.toUpperCase())+'</b>' : '<b>'+esc(s.name.toUpperCase())+'</b> · '+esc(s.maker||"")+' · '+(s.year||"")+' · core: <i>'+esc(coreLabel(s))+'</i>'+(coreInstalled(s)?'':' <span class="warn">NOT BUNDLED</span>')+(s.bios?' · <span class="'+(biosStatus(s).missingReq?'warn':'ok')+'">BIOS '+(biosStatus(s).missingReq?'MISSING':'OK')+'</span>':'');
   }
   function coreLabel(s){ var map={nes:"fceumm",snes:"snes9x",n64:"mupen64plus-next",gb:"gambatte",gba:"mgba",nds:"melonds",psx:"pcsx-rearmed",psp:"ppsspp",segaMD:"genesis-plus-gx",segaMS:"smsplus",segaGG:"genesis-plus-gx",segaCD:"genesis-plus-gx",segaSaturn:"yabause",atari2600:"stella2014",atari5200:"a5200",atari7800:"prosystem",lynx:"handy",jaguar:"virtualjaguar",pce:"mednafen-pce",ws:"mednafen-wswan",ngp:"mednafen-ngp",c64:"vice-x64sc",amiga:"puae",arcade:"fbneo",mame:"mame2003-plus",dos:"dosbox-pure"}; return map[s.id]||s.core; }
   function gridColumns(gridEl){
@@ -362,11 +421,13 @@
     else{
       var bs=biosStatus(sys);
       hb.style.display="";
-      hb.innerHTML='<span>CORE <b>'+esc(coreLabel(sys))+'</b></span>'+
+      var cs=coreStatus(sys);
+      hb.innerHTML='<button class="chip '+(cs.ok?'':'warn')+'" id="coreBtn" title="Emulator core details">'+ICON.gear+' CORE '+esc(coreLabel(sys))+(cs.ok?'':' · MISSING')+'</button>'+
         (sys.bios?'<button class="chip '+(bs.missingReq?'warn':'ok')+'" id="biosBtn">'+ICON.chip+' BIOS '+(bs.missingReq?'MISSING':(bs.have+'/'+sys.bios.length))+'</button>':'')+
         '<button class="chip" id="ctlBtn">'+ICON.keyboard+' CONTROLS</button>'+
         '<span class="exts">'+esc(sys.exts.map(function(e){return "."+e;}).join(" "))+'</span>';
       var bb=byId("biosBtn"); if(bb) bb.addEventListener("click",function(){ openBios(sys); });
+      var cbn=byId("coreBtn"); if(cbn) cbn.addEventListener("click",function(){ openCoreInfo(sys); });
       var cb=byId("ctlBtn"); if(cb) cb.addEventListener("click",function(){ showControls(sys); });
     }
     renderGames();
@@ -665,13 +726,40 @@
       {label:"Theme",icon:ICON.star,value:lbl(THEMES,settings.theme),cycle:function(d){ settings.theme=cyc(THEMES,settings.theme,d); saveSettings(); applyTheme(); rebuild(); }},
       {label:"Hide systems without games",sub:"Like RetroBat: only systems with ROMs appear",icon:ICON.all,toggle:settings.hideEmptySystems,action:function(){ settings.hideEmptySystems=!settings.hideEmptySystems; saveSettings(); renderSystems(); rebuild(); }},
       {label:"Kid mode",sub:"Hides add / delete / rename and the Settings button — press S or START to come back here",icon:ICON.star,toggle:settings.kidMode,action:function(){ settings.kidMode=!settings.kidMode; saveSettings(); document.body.classList.toggle("kid",settings.kidMode); rebuild(); }},
+      {label:"Emulators",sub:"Bundled cores (offline) — "+Object.keys(CORE_FILES).filter(function(c){ return CORE_FILES[c].every(function(f){ return !!CORES.files[f]; }); }).length+"/"+Object.keys(CORE_FILES).length+" installed",icon:ICON.gear,action:function(){ closeModal(); emulatorInventory(); }},
       {label:"Missing BIOS check",sub:"List every BIOS file that is still missing",icon:ICON.chip,action:function(){ closeModal(); missingBiosReport(); }},
       {label:"Storage",sub:"See what the library uses",icon:ICON.info,action:function(){ closeModal(); storageReport(); }},
       {label:"Export library list",sub:"Download a JSON with your game list & stats",icon:ICON.file,action:function(){ var data=ROMS.map(function(r){return {name:r.name,file:r.fileName,system:r.sysId,fav:r.fav,playCount:r.playCount,playTime:r.playTime,lastPlayed:r.lastPlayed};}); var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download="recalbox-web-library.json"; a.click(); }},
       {label:"Reset all settings",icon:ICON.reset,color:"#ff6a6a",action:function(){ settings=Object.assign({},DEFAULTS); saveSettings(); applyTheme(); rebuild(); toast("SETTINGS RESET"); }},
       {label:"Help & shortcuts",icon:ICON.keyboard,action:function(){ closeModal(); showHelp(); }},
-      {label:"About",sub:"Recalbox OS Web 2.0.0 · EmulatorJS 4.2.3 (GPL-3.0)",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.0</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>No games are included except free homebrew. Add your own ROMs and BIOS files.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
+      {label:"About",sub:"Recalbox OS Web 2.1.0 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.1</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>No games are included except free homebrew. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
     ]});
+  }
+  /* ================= emulator cores (bundled, offline) ================= */
+  function openCoreInfo(sys,game){
+    var cs=coreStatus(sys);
+    var rows=cs.files.map(function(f){ var sz=CORES.files[f]; return '<div class="crow '+(sz?'ok':'bad')+'"><span>'+esc(f)+'</span><b>'+(sz?fmtBytes(sz):'MISSING')+'</b></div>'; }).join("");
+    var items=[];
+    if(!cs.ok){
+      items.push({label:"How to add the core",sub:"Run  npm run cores  in the project folder (needs internet once), then restart the app. Installers built with npm run dist always include every core.",icon:ICON.info,action:function(){}});
+    } else if(game){ items.push({label:"Play",icon:ICON.play,color:"#7ed957",action:function(){ closeModal(); startGame(game); }}); }
+    if(cs.ok) items.push({label:"Clear this core's cache",sub:"The runtime caches decompressed cores in IndexedDB; clearing forces a re-read from the bundled file",icon:ICON.trash,action:function(){ clearCoreCache(); closeModal(); }});
+    items.push({label:"OK",icon:ICON.check,action:closeModal});
+    openModal({title:"EMULATOR CORE · "+sys.short,sub:cs.ok?"Bundled with the app — runs offline, nothing is downloaded.":"This core is NOT bundled in this build, so "+sys.name+" games cannot start.",
+      html:'<div class="coreinfo"><div class="ci-h"><span>'+esc(cs.core)+'</span><i>libretro core · WebAssembly · EmulatorJS '+esc(CORES.version||"4.2.3")+'</i></div>'+rows+'<div class="ci-f">'+(cs.ok?'<span class="ok">READY</span> · '+fmtBytes(cs.size)+' · location: app/data/cores/':'<span class="warn">'+cs.missing.length+' FILE'+(cs.missing.length===1?'':'S')+' MISSING</span>')+'</div></div>',
+      items:items});
+  }
+  function clearCoreCache(){ try{ indexedDB.deleteDatabase("EmulatorJS-core"); }catch(e){} toast("CORE CACHE CLEARED"); }
+  function emulatorInventory(){
+    var cores=Object.keys(CORE_FILES), ok=0, total=0;
+    var items=cores.map(function(c){
+      var fs=CORE_FILES[c], miss=fs.filter(function(f){ return !CORES.files[f]; }), size=fs.reduce(function(a,f){ return a+(CORES.files[f]||0); },0);
+      total+=size; if(!miss.length) ok++;
+      var systems=SYSTEMS.filter(function(s){ return coreFileName(s)===c; });
+      var alt=CORE_ALT[c]?findSys(CORE_ALT[c]):null; if(alt&&!systems.length) systems=[alt];
+      return {label:c+(alt?" (alternative)":""),sub:systems.map(function(s){return s.short;}).join(" · ")+(alt?" · selectable in the in-game menu":"")+(miss.length?"  —  missing: "+miss.join(", "):"  —  "+fmtBytes(size)),icon:miss.length?ICON.close:ICON.check,color:miss.length?"#ff6a6a":"#7ed957",action:function(){ if(systems[0]) openCoreInfo(systems[0]); }};
+    });
+    openModal({title:"EMULATORS",sub:ok+"/"+cores.length+" cores bundled · "+fmtBytes(total)+" · EmulatorJS "+(CORES.version||"4.2.3")+" · 100% offline — the app never connects to the internet",items:items.concat([{label:"OK",icon:ICON.check,action:closeModal}])});
   }
   function missingBiosReport(){
     var rows=[];
@@ -709,6 +797,7 @@
 
   function startGame(game){
     var sys=findSys(game.sysId); if(!sys)return;
+    if(!coreInstalled(sys)){ openCoreInfo(sys,game); return; }
     if(sys.bios && biosStatus(sys).missingReq && !game._biosWarned){
       game._biosWarned=true;
       openModal({title:"BIOS MISSING",sub:sys.name+" needs a BIOS file to run games. Without it the game will most likely fail to start.",items:[
@@ -771,7 +860,12 @@
     runtimeReady=new Promise(function(res,rej){
       var css=document.createElement("link"); css.rel="stylesheet"; css.href="data/emulator.min.css"; document.head.appendChild(css);
       var sc=document.createElement("script"); sc.src="data/emulator.min.js";
-      sc.onload=function(){ if(typeof window.EmulatorJS==="function") res(); else rej(new Error("EmulatorJS runtime missing")); };
+      sc.onload=function(){
+        if(typeof window.EmulatorJS!=="function"){ rej(new Error("EmulatorJS runtime missing")); return; }
+        // Offline: the runtime's update check (CDN version.json) and netplay are never used.
+        try{ window.EmulatorJS.prototype.checkForUpdates=function(){}; }catch(e){}
+        res();
+      };
       sc.onerror=function(){ runtimeReady=null; rej(new Error("failed to load data/emulator.min.js")); };
       document.head.appendChild(sc);
     });
@@ -829,7 +923,7 @@
     var ld=byId("plLoading"); ld.style.display="flex"; ld.classList.add("err"); ld.classList.remove("done");
     clearTimeout(watchdog);
     setLoad(msg);
-    byId("plLoadingTip").innerHTML="Possible causes: missing BIOS · wrong system for this file · unsupported ROM format · core needs WebGL2/threads.<br>Press <b>ESC</b> to go back.";
+    byId("plLoadingTip").innerHTML="Possible causes: missing BIOS · wrong system for this file · unsupported ROM format · core needs WebGL2/threads.<br>Everything runs locally — no download is attempted. Press <b>ESC</b> to go back.";
   }
   function onGameStart(){
     started=true; clearTimeout(watchdog);
@@ -1307,6 +1401,6 @@
   }
 
   window.addEventListener("unhandledrejection",function(ev){ var m=String((ev.reason&&ev.reason.message)||ev.reason||""); if(/Wake Lock|wakeLock/i.test(m)) ev.preventDefault(); });
-  window.RBW={version:"2.0.0",trace:TRACE,db:DB,state:function(){ return {view:view,currentSys:currentSys,game:current&&current.name,started:started,quitting:quitting,ccOpen:ccOpen,roms:ROMS.length,bios:Object.keys(BIOS).length,settings:settings}; }};
+  window.RBW={version:"2.1.0",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,state:function(){ return {view:view,currentSys:currentSys,game:current&&current.name,started:started,quitting:quitting,ccOpen:ccOpen,roms:ROMS.length,bios:Object.keys(BIOS).length,settings:settings}; }};
   console.log("RECALBOX OS WEB READY");
 })();

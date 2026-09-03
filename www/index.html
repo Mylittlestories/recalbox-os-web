@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' blob: 'wasm-unsafe-eval' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob: data:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' blob: data:; frame-src 'none'; object-src 'none'">
 <title>Recalbox OS Web — Multi-System</title>
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -12,7 +13,7 @@
   <div id="boot" class="screen active">
     <div class="boot-scan"></div>
     <div class="boot-logo"><b>&#9656;</b> RECAL<b>BOX</b> OS</div>
-    <div class="boot-sub">WEB EDITION &middot; 26 SYSTEMS &middot; NES &middot; SNES &middot; N64 &middot; GENESIS &middot; GB &middot; GBA &middot; PSX &middot; ARCADE &middot; DOS &middot; MORE</div>
+    <div class="boot-sub">STANDALONE &middot; OFFLINE &middot; 26 SYSTEMS &middot; NES &middot; SNES &middot; N64 &middot; GENESIS &middot; GB &middot; GBA &middot; PSX &middot; ARCADE &middot; DOS &middot; MORE</div>
     <div class="boot-bar"><i></i></div>
     <div class="boot-press">[ CLICK · PRESS ANY KEY · OR ANY GAMEPAD BUTTON ]</div>
     <div class="boot-log" id="bootLog">loading kernel ........ ok<br>mounting library ...... <span class="dots">...</span><br>initializing emulators . ok</div>

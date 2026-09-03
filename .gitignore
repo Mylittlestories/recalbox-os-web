@@ -1,4 +1,9 @@
 node_modules/
 dist/
-www/data/cores/
+# bundled emulator cores (~92 MB) are fetched once by `npm run cores` and packaged into the installers
+www/data/cores/*.data
+www/data/cores/*.zip
+www/data/cores/*.part
+www/data/cores/reports/
+www/data/cores/manifest.json
 *.log

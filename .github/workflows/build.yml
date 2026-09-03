@@ -36,8 +36,20 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Download emulator cores (full set)
-        run: node scripts/download-cores.js --all
+      # The cores are bundled INTO the installer (offline app). Cached between runs
+      # by runtime version so the CDN is only hit when EmulatorJS is upgraded.
+      - name: Cache emulator cores
+        id: cores-cache
+        uses: actions/cache@v4
+        with:
+          path: www/data/cores
+          key: ejs-cores-${{ hashFiles('www/data/emulator.min.js', 'scripts/download-cores.js') }}
+
+      - name: Bundle emulator cores (all systems)
+        run: npm run cores
+
+      - name: Verify the bundle is complete (offline guarantee)
+        run: npm run cores:check
 
       - name: Build
         run: npx electron-builder --${{ runner.os == 'Windows' && 'win' || (runner.os == 'Linux' && 'linux' || 'mac') }} --publish never

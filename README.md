@@ -2,11 +2,12 @@
 
 # 🕹️ RECALBOX OS WEB
 
-**Multi-system retro gaming desktop app** — plays games for **26 retro systems** in a Recalbox / RetroBat-style frontend that runs as a normal application. **No operating system to install or boot.**
+**Standalone multi-system retro gaming desktop app** — plays games for **26 retro systems** in a Recalbox / RetroBat-style frontend that runs as a normal application. **No operating system to install, no internet connection needed: every emulator is bundled inside the app.**
 
 ![System view](www/img/screenshot.png)
 
 [![Systems](https://img.shields.io/badge/systems-26-blue)](#-supported-systems)
+[![Offline](https://img.shields.io/badge/runs-100%25%20offline-success)](#-standalone--offline-by-design)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue)](#-licenses)
 [![Release](https://img.shields.io/github/v/release/Mylittlestories/recalbox-os-web?color=orange&label=release)](https://github.com/Mylittlestories/recalbox-os-web/releases)
 
@@ -18,10 +19,10 @@
 
 | Platform | File | Type |
 |----------|------|------|
-| 🪟 Windows | `Recalbox.OS.Web.Setup.2.0.0.exe` | Installer |
-| 🪟 Windows | `Recalbox.OS.Web.2.0.0.exe` | Portable (no install) |
-| 🐧 Linux | `Recalbox.OS.Web-2.0.0.AppImage` | AppImage |
-| 🍎 macOS | `Recalbox.OS.Web-2.0.0.dmg` | Disk image |
+| 🪟 Windows | `Recalbox.OS.Web.Setup.2.1.0.exe` | Installer |
+| 🪟 Windows | `Recalbox.OS.Web.2.1.0.exe` | Portable (no install) |
+| 🐧 Linux | `Recalbox.OS.Web-2.1.0.AppImage` | AppImage |
+| 🍎 macOS | `Recalbox.OS.Web-2.1.0.dmg` | Disk image |
 
 <div align="center">
 
@@ -32,6 +33,19 @@
 </div>
 
 > **No Node.js needed** — the [GitHub Actions build](#️-cloud-build-option-b) compiles the installers in the cloud automatically. Just download and run.
+
+## 🔌 Standalone — offline by design
+
+Like **RetroArch** or **RetroPie**, the emulators are *part of the application*:
+
+- **All 25 emulator cores are bundled** in the installer (`www/data/cores/`, ~92 MB) — RetroArch/libretro cores compiled to WebAssembly by the [EmulatorJS](https://emulatorjs.org) project (fceumm, snes9x, mupen64plus-next, pcsx-rearmed, ppsspp, genesis-plus-gx, fbneo, mame2003-plus, dosbox-pure…). They are pinned to the **exact runtime version** shipped in the app, so nothing can drift.
+- **Nothing is downloaded at runtime.** The Electron shell blocks every network request that is not the app's own `app://` scheme (plus a strict Content-Security-Policy), and the frontend neutralises the two places where the emulator runtime would otherwise reach its CDN (update check, core "failsafe" download). Disconnect the cable, put the PC in a cupboard — it works.
+- **Visible in the UI:** the boot screen reports `loading emulators ..... 25/25 cores · 92 MB · offline ready`, **Settings → Emulators** lists every core with its size, and the **CORE** chip in each system's library opens the core details. If a build ever lacked a core, that system is flagged `CORE MISSING` and its games are not launched (instead of a silent download attempt).
+- **Guaranteed by the build:** `npm run dist` and the GitHub workflow refuse to package an incomplete core set (`npm run cores:check`).
+
+Your games, BIOS, save states and settings are stored locally too — nothing ever leaves your machine.
+
+![Core details](www/img/core-info.png)
 
 ## ✨ What's new in 2.0 — the RetroBat treatment
 
@@ -138,9 +152,13 @@ A bundled **free** demo game is included: **2048** for NES (homebrew).
 
 ```bash
 npm install
-npm run cores          # download the emulator cores (only needed once)
-npm start              # launch the app window
+npm run cores          # bundle the emulator cores into www/data/cores (internet needed ONCE, ~92 MB)
+npm start              # launch the app window — works offline from now on
+npm run cores:check    # verify the bundle is complete without touching the network
 ```
+
+`npm start` also runs the core script in "soft" mode: if something is missing and you are online it
+completes the set, if you are offline it simply starts the app with what is there.
 
 Tip: the frontend is plain HTML/CSS/JS in `www/` — you can also serve that folder with any static
 server that sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`
@@ -151,20 +169,21 @@ headers and open it in Chrome for quick UI work.
 ```bash
 npm install
 npm run cores
-npx electron-builder --win     # Windows .exe (needs Windows, or Wine on Linux)
-npx electron-builder --linux   # Linux AppImage
-npx electron-builder --mac     # macOS .dmg (needs macOS)
+npm run dist -- --win     # Windows .exe (needs Windows, or Wine on Linux)
+npm run dist -- --linux   # Linux AppImage
+npm run dist -- --mac     # macOS .dmg (needs macOS)
 ```
 
-Output goes into `dist/`.
+Output goes into `dist/`. The cores are packaged **inside** the installer (unpacked next to the
+asar archive so the emulator can stream them); `predist` aborts the build if any core is missing.
 
 ## ☁️ Cloud build (Option B)
 
-Push this repo to GitHub, then either push a tag (`v2.0.0`) or run the
+Push this repo to GitHub, then either push a tag (`v2.1.0`) or run the
 **"Build Recalbox OS Web"** workflow from the Actions tab. GitHub Actions:
 
 1. checks out the code,
-2. downloads all emulator cores (plus their build reports and the PPSSPP asset pack),
+2. bundles all emulator cores (cached between runs, verified for completeness),
 3. builds Windows (`.exe`), Linux (`.AppImage`) and macOS (`.dmg`) installers,
 4. uploads them as workflow artifacts — and on a version tag, attaches them to a
    **GitHub Release** so you can download ready-made installers.
@@ -172,16 +191,17 @@ Push this repo to GitHub, then either push a tag (`v2.0.0`) or run the
 ## 📂 Project layout
 
 ```
-main.js                 Electron main (custom app:// protocol with COOP/COEP, offline EmulatorJS)
+main.js                 Electron main (app:// protocol with COOP/COEP + CSP, network lockdown, core inventory)
 www/                    the app (frontend + EmulatorJS data)
   index.html            UI: boot · system view · game view · player · control center · dialogs
   js/app.js             frontend logic (library DB, navigation, hotkeys, settings, BIOS manager)
   css/                  theme + font
   img/                  screenshots for this README
-  data/                 EmulatorJS 4.2.3 runtime (stable release) + cores (from `npm run cores`)
+  data/                 EmulatorJS 4.2.3 runtime (stable release)
+  data/cores/           bundled emulator cores + manifest.json (from `npm run cores`, not in git)
   roms/                 bundled free demo games
 build/icon.png          app icon
-scripts/download-cores.js   fetches all emulator cores
+scripts/download-cores.js   bundles/verifies the emulator cores (pinned to the runtime version)
 .github/workflows/build.yml  GitHub Actions cloud build
 ```
 

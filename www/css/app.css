@@ -295,3 +295,21 @@ body[data-view="boot"] footer{display:none}
 
 @media (max-width:820px){.h-hint,.pl-hints,.hb span,footer .f-hints,.h-count{display:none}.hb{padding:9px}.lib-left{width:64px}.lib-cons .lc span,.lib-cons .lc em{display:none}.lib-cons .lc{justify-content:center}.search{width:150px}}
 @media (max-width:560px){.lib-left{display:none}.grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}}
+
+/* ===== bundled emulator cores (offline) ===== */
+.boot-log .warn{color:var(--red)}
+.card.nocore{opacity:.5;filter:saturate(.35)}
+.card.nocore:hover,.card.nocore.focus{opacity:.85}
+.card .nocore-tag{position:absolute;top:10px;left:10px;z-index:1;font-size:6.5px;letter-spacing:1px;padding:4px 7px;border-radius:20px;background:var(--red);color:#fff;font-weight:bold}
+.coreinfo{font-family:var(--body);font-size:13px;color:var(--text);background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:12px 14px;margin-bottom:6px}
+.coreinfo .ci-h{display:flex;flex-direction:column;gap:3px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line2)}
+.coreinfo .ci-h span{font-family:var(--ui);font-size:10px;color:var(--accent);letter-spacing:.5px}
+.coreinfo .ci-h i{font-style:normal;color:var(--muted);font-size:12px}
+.coreinfo .crow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
+.coreinfo .crow span{font-family:monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.coreinfo .crow b{font-family:var(--ui);font-size:8px;letter-spacing:.5px;white-space:nowrap}
+.coreinfo .crow.ok b{color:var(--green)}
+.coreinfo .crow.bad b{color:var(--red)}
+.coreinfo .ci-f{margin-top:10px;font-family:var(--ui);font-size:7.5px;letter-spacing:.8px;color:var(--muted)}
+.coreinfo .ci-f .ok{color:var(--green)}
+.coreinfo .ci-f .warn{color:var(--red)}
