@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Recalbox OS Web">
+  <defs>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#1c1c26"/>
+  <!-- pixel-stair play mark -->
+  <path fill="#ff8a00" filter="url(#g)" d="M27 13 L53 31 L27 46 L15 46 L15 39 L19 39 L19 33 L23 33 L23 27 L27 27 Z"/>
+  <!-- d-pad cutout -->
+  <path fill="#1c1c26" d="M33.5 26h4v3.5H41v4h-3.5V37h-4v-3.5H30v-4h3.5z"/>
+  <!-- four pixels -->
+  <g fill="#ff8a00"><rect x="22" y="51" width="3" height="3"/><rect x="28" y="51" width="3" height="3"/><rect x="34" y="51" width="3" height="3"/><rect x="40" y="51" width="3" height="3"/></g>
+</svg>

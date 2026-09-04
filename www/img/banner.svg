@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="Recalbox OS Web — standalone multi-system retro gaming app">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#15151c"/><stop offset="1" stop-color="#0e0e12"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#ffffff" stroke-opacity=".035"/></pattern>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="tg" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1200" height="320" rx="24" fill="url(#bg)"/>
+  <rect width="1200" height="320" rx="24" fill="url(#grid)"/>
+  <rect x=".5" y=".5" width="1199" height="319" rx="24" fill="none" stroke="#2c2c3a"/>
+  <!-- scanline accent -->
+  <rect x="0" y="286" width="1200" height="2" fill="#ff8a00" fill-opacity=".35"/>
+  <g transform="translate(96 64) scale(3)">
+  <defs>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#1c1c26" stroke="#2c2c3a" stroke-width=".6"/>
+  <!-- pixel-stair play mark -->
+  <path fill="#ff8a00" filter="url(#g)" d="M27 13 L53 31 L27 46 L15 46 L15 39 L19 39 L19 33 L23 33 L23 27 L27 27 Z"/>
+  <!-- d-pad cutout -->
+  <path fill="#1c1c26" d="M33.5 26h4v3.5H41v4h-3.5V37h-4v-3.5H30v-4h3.5z"/>
+  <!-- four pixels -->
+  <g fill="#ff8a00"><rect x="22" y="51" width="3" height="3"/><rect x="28" y="51" width="3" height="3"/><rect x="34" y="51" width="3" height="3"/><rect x="40" y="51" width="3" height="3"/></g>
+</g>
+  <g font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" fill="#e8e8ee">
+    <text x="340" y="140" font-size="76" font-weight="800" letter-spacing="2" filter="url(#tg)">RECAL<tspan fill="#ff8a00">BOX</tspan> OS <tspan font-size="30" font-weight="600" fill="#8b8b9a" letter-spacing="6" dy="-30">WEB</tspan></text>
+    <text x="342" y="180" font-size="25" font-weight="500" fill="#c5c5d0">Standalone multi-system retro gaming desktop app.</text>
+    <text x="342" y="208" font-size="19" fill="#8b8b9a">Every emulator bundled inside · Recalbox / RetroBat-style frontend · nothing else to install</text>
+    <g font-size="17" font-weight="700" letter-spacing="1.5" fill="#ffb347">
+      <rect x="342" y="228" width="150" height="34" rx="8" fill="#ff8a00" fill-opacity=".12" stroke="#ff8a00" stroke-opacity=".5"/><text x="417" y="251" text-anchor="middle">26 SYSTEMS</text>
+      <rect x="506" y="228" width="180" height="34" rx="8" fill="#ff8a00" fill-opacity=".12" stroke="#ff8a00" stroke-opacity=".5"/><text x="596" y="251" text-anchor="middle">100% OFFLINE</text>
+      <rect x="700" y="228" width="230" height="34" rx="8" fill="#ff8a00" fill-opacity=".12" stroke="#ff8a00" stroke-opacity=".5"/><text x="815" y="251" text-anchor="middle">38 FREE GAMES INSIDE</text>
+      <rect x="944" y="228" width="190" height="34" rx="8" fill="#7ed957" fill-opacity=".10" stroke="#7ed957" stroke-opacity=".5"/><text x="1039" y="251" text-anchor="middle" fill="#7ed957">WIN · LINUX · MAC</text>
+    </g>
+  </g>
+</svg>

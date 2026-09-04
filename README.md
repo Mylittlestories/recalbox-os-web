@@ -1,28 +1,34 @@
 <div align="center">
 
-# 🕹️ RECALBOX OS WEB
+<a href="https://github.com/Mylittlestories/recalbox-os-web/releases/latest"><img src="www/img/banner.svg" alt="Recalbox OS Web — standalone multi-system retro gaming desktop app" width="100%"></a>
 
-**Standalone multi-system retro gaming desktop app** — plays games for **26 retro systems** in a Recalbox / RetroBat-style frontend that runs as a normal application. **No operating system to install, no internet connection needed: every emulator is bundled inside the app.**
+<br>
+
+[![Release](https://img.shields.io/github/v/release/Mylittlestories/recalbox-os-web?color=orange&label=release&style=flat-square)](https://github.com/Mylittlestories/recalbox-os-web/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Mylittlestories/recalbox-os-web/total?color=orange&style=flat-square)](https://github.com/Mylittlestories/recalbox-os-web/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/Mylittlestories/recalbox-os-web/build.yml?branch=main&style=flat-square&label=build)](https://github.com/Mylittlestories/recalbox-os-web/actions/workflows/build.yml)
+[![Systems](https://img.shields.io/badge/systems-26-blue?style=flat-square)](#️-supported-systems)
+[![Free games](https://img.shields.io/badge/free%20games%20inside-38-success?style=flat-square)](#-bundled-free-games--try-every-system-out-of-the-box)
+[![Offline](https://img.shields.io/badge/runs-100%25%20offline-success?style=flat-square)](#-standalone--offline-by-design)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square)](#-licenses)
+
+**Standalone multi-system retro gaming desktop app** — plays games for **26 retro systems** in a Recalbox / RetroBat-style frontend that runs as a normal application. **No operating system to install, no internet connection needed: every emulator is bundled inside the app, and 38 free games come pre-installed so you can try every system right away.**
 
 ![System view](www/img/screenshot.png)
-
-[![Systems](https://img.shields.io/badge/systems-26-blue)](#-supported-systems)
-[![Offline](https://img.shields.io/badge/runs-100%25%20offline-success)](#-standalone--offline-by-design)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](#-licenses)
-[![Release](https://img.shields.io/github/v/release/Mylittlestories/recalbox-os-web?color=orange&label=release)](https://github.com/Mylittlestories/recalbox-os-web/releases)
 
 </div>
 
 ## 📥 Download & Install
 
-**Get the latest installer for your platform from the [Releases page](https://github.com/Mylittlestories/recalbox-os-web/releases):**
+**Get the latest installer for your platform from the [Releases page](https://github.com/Mylittlestories/recalbox-os-web/releases/latest)** — see the [release notes](#-whats-new) for what changed:
 
 | Platform | File | Type |
 |----------|------|------|
-| 🪟 Windows | `Recalbox.OS.Web.Setup.2.2.0.exe` | Installer |
-| 🪟 Windows | `Recalbox.OS.Web.2.2.0.exe` | Portable (no install) |
-| 🐧 Linux | `Recalbox.OS.Web-2.2.0.AppImage` | AppImage |
-| 🍎 macOS | `Recalbox.OS.Web-2.2.0.dmg` | Disk image |
+| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.0-win-x64-setup.exe` | One-click installer |
+| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.0-win-x64-portable.exe` | Portable (no install) |
+| 🐧 Linux | `RecalboxOSWeb-2.2.0-linux-x86_64.AppImage` | AppImage (`chmod +x`, run) |
+| 🍎 macOS (Apple Silicon) | `RecalboxOSWeb-2.2.0-mac-arm64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
+| 🍎 macOS (Intel) | `RecalboxOSWeb-2.2.0-mac-x64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
 
 <div align="center">
 
@@ -47,7 +53,20 @@ Your games, BIOS, save states and settings are stored locally too — nothing ev
 
 ![Core details](www/img/core-info.png)
 
-## ✨ What's new in 2.0 — the RetroBat treatment
+## 🆕 What's new
+
+### 2.2.0 — free game library, new identity
+- **38 legally free games for 20 systems are bundled** (NES, SNES, N64, GB, GBA, Mega Drive, SMS, GG, 2600, Lynx, Jaguar, PC Engine, WonderSwan, NGP, PSX, PSP, Saturn, Arcade/FBNeo, MAME, DOS) — homebrew, open-source and freeware titles plus the mamedev.org arcade classics. Every one was verified running on its bundled core, offline. [Details & credits ↓](#-bundled-free-games--try-every-system-out-of-the-box)
+- **Game info dialog** (`I` key / *Game options → Game info*): description, author, year, genre, players, licence, source, file, size, play stats, box art.
+- **New app icon and logo** (Windows `.ico`, macOS `.icns`, Linux icon set, in-app boot/header mark).
+- Per-system libretro core options are now applied on first launch (Jaguar renders, MAME skips the disclaimers) — EmulatorJS 4.2.3 silently ignored them before.
+- Fixes: a held gamepad button no longer re-triggers a menu action after quitting a game; focus follows a game after rename / favourite; PSX `.exe`, Jaguar `.prg`, PSP `.elf/.prx` accepted.
+
+### 2.1.0 — standalone & offline
+- All **25 emulator cores are packaged inside the installer**; the Electron shell blocks every network request that is not the app's own `app://` scheme.
+- **Settings → Emulators** lists each core with size and status; the boot screen reports the inventory; builds refuse to package an incomplete core set.
+
+### 2.0.0 — the RetroBat treatment
 
 Version 2.0 rebuilds the frontend around the ideas that make [RetroBat](https://www.retrobat.org/) / EmulationStation pleasant to use with a controller from the couch:
 
@@ -239,11 +258,12 @@ asar archive so the emulator can stream them); `predist` aborts the build if any
 
 ## ☁️ Cloud build (Option B)
 
-Push this repo to GitHub, then either push a tag (`v2.2.0`) or run the
-**"Build Recalbox OS Web"** workflow from the Actions tab. GitHub Actions:
+Every push to `main` builds all three installers as workflow artifacts; pushing a version tag
+(`git tag v2.2.0 && git push --tags`) additionally publishes them on a **GitHub Release**. You can
+also run the **"Build Recalbox OS Web"** workflow by hand from the Actions tab. GitHub Actions:
 
 1. checks out the code,
-2. bundles all emulator cores (cached between runs, verified for completeness),
+2. bundles all emulator cores and the mamedev.org arcade games (cached between runs, verified for completeness),
 3. builds Windows (`.exe`), Linux (`.AppImage`) and macOS (`.dmg`) installers,
 4. uploads them as workflow artifacts — and on a version tag, attaches them to a
    **GitHub Release** so you can download ready-made installers.
@@ -256,11 +276,11 @@ www/                    the app (frontend + EmulatorJS data)
   index.html            UI: boot · system view · game view · player · control center · dialogs
   js/app.js             frontend logic (library DB, navigation, hotkeys, settings, BIOS manager)
   css/                  theme + font
-  img/                  screenshots for this README
+  img/                  logo.svg / banner.svg / icon-256.png + screenshots for this README
   data/                 EmulatorJS 4.2.3 runtime (stable release)
   data/cores/           bundled emulator cores + manifest.json (from `npm run cores`, not in git)
   roms/                 bundled free library: games + library.json (attributes) + LICENSES.md (credits)
-build/icon.png          app icon
+build/                  icon-master.png (1024² source) → make-icons.py → icon.png / icon.ico / icon.icns / icons/*.png
 scripts/download-cores.js   bundles/verifies the emulator cores (pinned to the runtime version)
 scripts/download-roms.js    fetches/verifies the mamedev.org arcade games (distribution restricted to that site)
 .github/workflows/build.yml  GitHub Actions cloud build

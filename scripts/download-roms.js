@@ -38,7 +38,7 @@ const QUIET = args.includes('--quiet');
 
 /* romset → { size, sha256 } — MAME 0.78 (mame2003-plus) compatible sets as published on mamedev.org */
 const RESTRICTED = {
-  alienar:  { size: 17027, sha256: '7f87339f307625f7dd8dd9f36f480633e3a0df02ebcdc296614172f200e478bb' },
+  alienar:  { size: 17005, sha256: 'cc0e0f7e284d6ec8d3c5e3c161e8ff330bf345bfa7ddf45df917ec9fbd772152' },
   circus:   { size: 6152,  sha256: '27d3952dba171d50ef63a7a651e063f83830d2e07e4799dadcc5c42e0371d424' },
   carpolo:  { size: 5562,  sha256: 'cde6077be7cf552f2147181a3ef858ee261b0adce47198cadd16d33dedaa928f' },
   sidetrac: { size: 5491,  sha256: '2ac03e47d67db378166b18ec3a7eaf40c3791a780a44042f80d24e9141a3f228' },
@@ -64,20 +64,36 @@ function verify(id) {
   if (sha256(file) !== want.sha256) return 'checksum mismatch';
   return null;
 }
-function download(url, dest, redirects = 0) {
+function downloadOnce(url, dest, redirects = 0) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'recalbox-os-web/2.2 (+https://github.com/Mylittlestories/recalbox-os-web)' } }, (res) => {
+    const req = https.get(url, { headers: { 'User-Agent': 'recalbox-os-web/2.2 (+https://github.com/Mylittlestories/recalbox-os-web)' } }, (res) => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirects < 5) {
-        res.resume(); return resolve(download(new URL(res.headers.location, url).href, dest, redirects + 1));
+        res.resume(); return resolve(downloadOnce(new URL(res.headers.location, url).href, dest, redirects + 1));
       }
       if (res.statusCode !== 200) { res.resume(); return reject(new Error(`HTTP ${res.statusCode}`)); }
       const tmp = dest + '.part';
       const out = fs.createWriteStream(tmp);
       res.pipe(out);
+      res.on('error', reject);
       out.on('finish', () => out.close(() => { fs.renameSync(tmp, dest); resolve(); }));
       out.on('error', reject);
-    }).on('error', reject);
+    });
+    req.setTimeout(SOFT ? 10000 : 30000, () => req.destroy(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' })));
+    req.on('error', reject);
   });
+}
+/* mamedev.org is a small volunteer-run site: retry a few times before giving up (CI must not stall on it) */
+async function download(url, dest) {
+  const tries = SOFT ? 1 : 3;
+  for (let i = 1; ; i++) {
+    try { return await downloadOnce(url, dest); }
+    catch (e) {
+      try { fs.unlinkSync(dest + '.part'); } catch (_) {}
+      if (i >= tries) throw e;
+      log(`    retry ${i}/${tries - 1} after ${e.message}`);
+      await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
 }
 
 (async () => {

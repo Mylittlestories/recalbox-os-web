@@ -155,6 +155,7 @@ function createWindow() {
     backgroundColor: '#0e0e12',
     autoHideMenuBar: true,
     title: 'Recalbox OS Web',
+    icon: path.join(__dirname, 'www', 'img', 'icon-256.png'),
     show: false,
     webPreferences: {
       nodeIntegration: false,
