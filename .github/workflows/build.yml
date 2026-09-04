@@ -48,6 +48,9 @@ jobs:
       - name: Bundle emulator cores (all systems)
         run: npm run cores
 
+      - name: Fetch mamedev.org arcade games (not committed — see scripts/download-roms.js)
+        run: npm run roms
+
       - name: Verify the bundle is complete (offline guarantee)
         run: npm run cores:check
 

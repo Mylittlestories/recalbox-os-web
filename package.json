@@ -1,14 +1,16 @@
 {
   "name": "recalbox-os-web",
   "productName": "Recalbox OS Web",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Standalone multi-system retro gaming desktop app (NES, SNES, N64, GB, GBA, Genesis, PSX, Arcade, DOS & more). All emulator cores bundled \u2014 runs 100% offline.",
   "main": "main.js",
   "scripts": {
-    "start": "node scripts/download-cores.js --soft --quiet && electron .",
+    "start": "node scripts/download-cores.js --soft --quiet && node scripts/download-roms.js --soft --quiet && electron .",
     "cores": "node scripts/download-cores.js",
     "cores:check": "node scripts/download-cores.js --check",
-    "predist": "node scripts/download-cores.js --check",
+    "roms": "node scripts/download-roms.js",
+    "roms:check": "node scripts/download-roms.js --check",
+    "predist": "node scripts/download-cores.js --check && node scripts/download-roms.js --check",
     "dist": "electron-builder --publish never"
   },
   "devDependencies": {

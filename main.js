@@ -137,6 +137,7 @@ const MIME = {
   '.bat': 'application/octet-stream',
   '.dosz': 'application/octet-stream',
   '.state': 'application/octet-stream',
+  '.elf': 'application/octet-stream',
   '.srm': 'application/octet-stream',
 };
 

@@ -313,3 +313,17 @@ body[data-view="boot"] footer{display:none}
 .coreinfo .ci-f{margin-top:10px;font-family:var(--ui);font-size:7.5px;letter-spacing:.8px;color:var(--muted)}
 .coreinfo .ci-f .ok{color:var(--green)}
 .coreinfo .ci-f .warn{color:var(--red)}
+
+/* ===== bundled free library: attributes ===== */
+.game .s .genre{color:var(--muted);opacity:.85}
+.lib-detail .dyear{font-size:9px;color:var(--muted);margin-left:6px}
+.lib-detail .lic{color:var(--green)}
+.lib-detail .dd{font-family:var(--body);font-size:13px;color:var(--text);opacity:.9;margin:4px 0 6px;line-height:1.45;max-width:1100px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ginfo{font-family:var(--body);font-size:13px;color:var(--text)}
+.ginfo .gshot{display:block;width:100%;max-height:220px;object-fit:contain;background:#000;border-radius:8px;margin-bottom:10px;image-rendering:pixelated}
+.ginfo .gdesc{font-size:14px;line-height:1.5;margin:0 0 12px;color:#fff}
+.ginfo .irow{display:flex;gap:14px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.07)}
+.ginfo .irow span{flex:0 0 84px;font-family:var(--ui);font-size:7px;letter-spacing:1px;color:var(--accent);padding-top:3px}
+.ginfo .irow b{font-weight:normal;color:var(--text);word-break:break-word}
+.ginfo .irow b i{color:var(--muted);font-style:normal}
+.ginfo .src{font-family:monospace;font-size:12px;color:var(--muted)}

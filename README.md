@@ -19,10 +19,10 @@
 
 | Platform | File | Type |
 |----------|------|------|
-| 🪟 Windows | `Recalbox.OS.Web.Setup.2.1.0.exe` | Installer |
-| 🪟 Windows | `Recalbox.OS.Web.2.1.0.exe` | Portable (no install) |
-| 🐧 Linux | `Recalbox.OS.Web-2.1.0.AppImage` | AppImage |
-| 🍎 macOS | `Recalbox.OS.Web-2.1.0.dmg` | Disk image |
+| 🪟 Windows | `Recalbox.OS.Web.Setup.2.2.0.exe` | Installer |
+| 🪟 Windows | `Recalbox.OS.Web.2.2.0.exe` | Portable (no install) |
+| 🐧 Linux | `Recalbox.OS.Web-2.2.0.AppImage` | AppImage |
+| 🍎 macOS | `Recalbox.OS.Web-2.2.0.dmg` | Disk image |
 
 <div align="center">
 
@@ -139,22 +139,82 @@ Default game keys: **Arrows** = D-pad · **Z** = B/1 · **X** = A/2 · **A** = Y
 
 Bold = required. Install BIOS files from the **BIOS** button in a system's game view, or run **Settings → Missing BIOS check**.
 
+## 🎁 Bundled free games — try every system out of the box
+
+The app ships with a **free library of 38 games covering 20 of the 26 systems** — homebrew, open-source and freeware
+titles released by their authors, plus the classic arcade games that their rights holders made available for free
+non-commercial use. Every one of them was launched on its bundled core (see `www/roms/LICENSES.md` for the exact terms,
+authors and the compatibility notes). They appear with a **FREE** badge, cannot be deleted (hide the system instead) and
+have full attributes: press **I** (or *Game options → Game info*) on a game to see author, year, genre, players, licence,
+source URL, file size, play stats and its box art.
+
+![Every bundled game running on its bundled core](www/img/free-library.jpg)
+
+| System | Game | Author | Year | Licence |
+|--------|------|--------|------|---------|
+| NES | **2048** | tsone | 2014 | MIT / open source |
+| NES | **Nova the Squirrel** | NovaSquirrel | 2018 | GPL-3.0 (code) · CC BY-NC-SA 4.0 (assets) |
+| NES | **Alter Ego** | Shiru | 2011 | Freeware / public domain |
+| NES | **Spacegulls** | Morphcat Games | 2021 | Freeware |
+| SNES | **Super Boss Gaiden** | Dieter von Laser / Chilly Willy | 2015 | Freeware |
+| SNES | **N-Warp Daisakusen** | d4s | 2008 | Freeware |
+| Nintendo 64 | **Kumi-Daiko Beatoff 64** | Team Riistahillo (N64brew Game Jam 2020) | 2020 | CC0 1.0 (public domain dedication) |
+| Game Boy | **Tobu Tobu Girl** | Tangram Games | 2017 | MIT / CC BY 4.0 (open source) |
+| Game Boy | **Deadeus** | -IZMA- | 2019 | Freeware |
+| Game Boy Advance | **Celeste Classic** | Maddy Thorson & Noel Berry · GBA port by JeffRuLz | 2020 | Open source (original PICO-8 game, free) |
+| Mega Drive | **Cave Story MD** | Studio Pixel · port by andwn | 2019 | MIT (port) · freeware (game) |
+| Mega Drive | **Ultimate Tetris** | Haroldo O. Pinheiro | 2021 | Freeware / open source (SGDK) |
+| Mega Drive | **Break An Egg** | Studio Vetea | 2017 | Freeware |
+| Master System | **6-Button Controller Test** | Charles MacDonald | 2000 | Public domain |
+| Game Gear | **Button Test** | libretro | 2019 | Public domain |
+| Atari 2600 | **Sheep It Up!** | Dr. Ludos | 2017 | Freeware (open source) |
+| WonderSwan | **Swan Driving** | Sebastian Mihai | 2012 | Freeware |
+| PC Engine | **240p Test Suite (PC Engine)** | Artemio Urbina | 2013 | GPLv2 |
+| Atari Lynx | **Handy Rogue** | james7780 | 2024 | Open source (GitHub) |
+| Atari Jaguar | **BlueRetro Jaguar Pad Test** | Jacques Gagnon (darthcloud) | 2021 | Apache-2.0 |
+| Neo Geo Pocket | **Asteroids neo** | Steven MacDonald (studioNOTsnk) | 2026 | MIT |
+| PlayStation | **PSX Test Program** | libretro | 2019 | Open source |
+| PSP | **Cube Test (PSP)** | PPSSPP | 2019 | Open source |
+| Sega Saturn | **Saturn Demo (Yabause sample)** | Yabause project | 2012 | GPL |
+| Arcade (FBNeo) | **Alien Arena** | Duncan Brown | 1985 | Free for home use (author's permission) |
+| MAME 2003-Plus | **Gridlee** | Videa | 1982 | Free non-commercial use (Videa founders) |
+| MAME 2003-Plus | **Robby Roto** | Bally/Midway | 1981 | Free non-commercial use (Jamie Fenton) |
+| MAME 2003-Plus | **Circus** | Exidy | 1977 | Free non-commercial use (Exidy) |
+| MAME 2003-Plus | **Rip Cord** | Exidy | 1979 | Free non-commercial use (Exidy) |
+| MAME 2003-Plus | **Fire One!** | Exidy | 1979 | Free non-commercial use (Exidy) |
+| MAME 2003-Plus | **Super Tank** | Video Games GmbH | 1981 | Free non-commercial use |
+| MAME 2003-Plus | **Side Trak** | Exidy | 1979 | Free non-commercial use (Exidy) |
+| MAME 2003-Plus | **Targ** | Exidy | 1980 | Free non-commercial use (Exidy) |
+| MAME 2003-Plus | **Spectar** | Exidy | 1980 | Free non-commercial use (Exidy) |
+| MAME 2003-Plus | **Star Fire** | Exidy | 1979 | Free non-commercial use (Exidy) |
+| MAME 2003-Plus | **Car Polo** | Exidy | 1977 | Free non-commercial use (Exidy) |
+| MS-DOS | **Commander Keen 4: Secret of the Oracle (shareware)** | id Software / Apogee | 1991 | Shareware episode (freely distributable) |
+| MS-DOS | **Wolfenstein 3D (shareware)** | id Software / Apogee | 1992 | Shareware episode (freely distributable) |
+
+Systems with no legally free game we could find in a working form (Nintendo DS, Sega CD, Atari 5200 / 7800, C64, Amiga) start
+empty — add your own files.
+
+The **MAME / FBNeo arcade titles** (Exidy, Bally/Midway, Videa, Video Games GmbH, Duncan Brown) are approved for distribution on
+[mamedev.org](https://www.mamedev.org/roms/) only, so they are **not in this repository**: `npm run roms`
+(`scripts/download-roms.js`) fetches and checksums them at build time, exactly like the emulator cores, and the GitHub build
+does the same. If a file is missing the game is simply not listed.
+
 ## ⚠️ Important note about game ROMs
 
-The app provides the **emulator engines** (open source, GPL). It does **not** include
-copyrighted games. You add your own ROMs in the app (**ADD GAMES** or drag-and-drop);
+The app provides the **emulator engines** (open source, GPL) and the free library above. It does **not** include
+copyrighted commercial games. You add your own ROMs in the app (**ADD GAMES** or drag-and-drop);
 they are stored inside the app's local database, never uploaded anywhere.
 A few systems (PS1, Sega CD, Saturn, Lynx, Amiga…) require **BIOS files** that you supply yourself.
-
-A bundled **free** demo game is included: **2048** for NES (homebrew).
 
 ## 🛠️ Run locally (development)
 
 ```bash
 npm install
 npm run cores          # bundle the emulator cores into www/data/cores (internet needed ONCE, ~92 MB)
+npm run roms           # fetch the mamedev.org arcade games into www/roms (internet needed ONCE, ~170 KB)
 npm start              # launch the app window — works offline from now on
-npm run cores:check    # verify the bundle is complete without touching the network
+npm run cores:check    # verify the core bundle is complete without touching the network
+npm run roms:check     # same for the arcade games
 ```
 
 `npm start` also runs the core script in "soft" mode: if something is missing and you are online it
@@ -179,7 +239,7 @@ asar archive so the emulator can stream them); `predist` aborts the build if any
 
 ## ☁️ Cloud build (Option B)
 
-Push this repo to GitHub, then either push a tag (`v2.1.0`) or run the
+Push this repo to GitHub, then either push a tag (`v2.2.0`) or run the
 **"Build Recalbox OS Web"** workflow from the Actions tab. GitHub Actions:
 
 1. checks out the code,
@@ -199,9 +259,10 @@ www/                    the app (frontend + EmulatorJS data)
   img/                  screenshots for this README
   data/                 EmulatorJS 4.2.3 runtime (stable release)
   data/cores/           bundled emulator cores + manifest.json (from `npm run cores`, not in git)
-  roms/                 bundled free demo games
+  roms/                 bundled free library: games + library.json (attributes) + LICENSES.md (credits)
 build/icon.png          app icon
 scripts/download-cores.js   bundles/verifies the emulator cores (pinned to the runtime version)
+scripts/download-roms.js    fetches/verifies the mamedev.org arcade games (distribution restricted to that site)
 .github/workflows/build.yml  GitHub Actions cloud build
 ```
 
@@ -212,4 +273,6 @@ in the emulator's IDBFS, settings in `localStorage`.
 ## 📄 Licenses
 
 - EmulatorJS and its RetroArch cores are **GPL-3.0**.
+- The bundled games belong to their authors — see [`www/roms/LICENSES.md`](www/roms/LICENSES.md) for each title's licence
+  (GPL, MIT, CC0, Apache-2.0, freeware, shareware episodes, mamedev.org free non-commercial use).
 - This app is provided for playing games you own. Always respect copyright.

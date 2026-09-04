@@ -7,3 +7,18 @@ www/data/cores/*.part
 www/data/cores/reports/
 www/data/cores/manifest.json
 *.log
+# mamedev.org arcade ROMs: free for non-commercial use but approved for distribution on mamedev.org only —
+# fetched by `npm run roms` (scripts/download-roms.js), never committed
+www/roms/alienar.zip
+www/roms/circus.zip
+www/roms/carpolo.zip
+www/roms/sidetrac.zip
+www/roms/ripcord.zip
+www/roms/fireone.zip
+www/roms/starfire.zip
+www/roms/targ.zip
+www/roms/spectar.zip
+www/roms/gridlee.zip
+www/roms/robby.zip
+www/roms/supertnk.zip
+www/roms/*.part

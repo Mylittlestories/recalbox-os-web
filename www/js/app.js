@@ -227,8 +227,8 @@
     {id:"gb",name:"Game Boy / Color",short:"GB",maker:"Nintendo",year:1989,core:"gb",color:"#9ad07a",note:"8-bit handheld",exts:["gb","gbc","sgb"],kind:"handheld",controls:"ARROWS = D-PAD · Z = B · X = A · ENTER = START · V = SELECT"},
     {id:"gba",name:"Game Boy Advance",short:"GBA",maker:"Nintendo",year:2001,core:"gba",color:"#b862c0",note:"32-bit handheld",exts:["gba"],kind:"handheld",controls:"ARROWS = D-PAD · Z = B · X = A · Q/E = L/R · ENTER = START · V = SELECT",bios:[{name:"gba_bios.bin",req:false,desc:"Optional, improves compatibility"}]},
     {id:"nds",name:"Nintendo DS",short:"NDS",maker:"Nintendo",year:2004,core:"nds",color:"#d9a066",note:"dual-screen handheld",exts:["nds"],kind:"handheld",controls:KB_STD+" · MOUSE = TOUCH SCREEN",bios:[{name:"bios7.bin",req:false},{name:"bios9.bin",req:false},{name:"firmware.bin",req:false}]},
-    {id:"psx",name:"Sony PlayStation",short:"PSX",maker:"Sony",year:1994,core:"psx",color:"#b8b8c8",note:"32-bit CD console",exts:["cue","bin","img","iso","pbp","chd","m3u","ecm","zip","7z"],kind:"console",multi:true,controls:"ARROWS = D-PAD · Z = CROSS · X = CIRCLE · A = SQUARE · S = TRIANGLE · Q/E = L1/R1 · TAB/R = L2/R2 · ENTER = START · V = SELECT",bios:[{name:"scph5501.bin",req:true,desc:"US BIOS (recommended)"},{name:"scph5500.bin",req:false,desc:"JP BIOS"},{name:"scph5502.bin",req:false,desc:"EU BIOS"},{name:"scph1001.bin",req:false,desc:"US BIOS (alt)"}]},
-    {id:"psp",name:"PlayStation Portable",short:"PSP",maker:"Sony",year:2004,core:"psp",threads:true,color:"#6b6bb0",note:"handheld · needs a fast PC",exts:["iso","cso","pbp","chd","zip","7z"],kind:"handheld",controls:"ARROWS = D-PAD · T/G/F/H = ANALOG · Z = CROSS · X = CIRCLE · A = SQUARE · S = TRIANGLE · Q/E = L/R · ENTER = START · V = SELECT"},
+    {id:"psx",name:"Sony PlayStation",short:"PSX",maker:"Sony",year:1994,core:"psx",color:"#b8b8c8",note:"32-bit CD console",exts:["cue","bin","img","iso","pbp","chd","m3u","ecm","exe","zip","7z"],kind:"console",multi:true,controls:"ARROWS = D-PAD · Z = CROSS · X = CIRCLE · A = SQUARE · S = TRIANGLE · Q/E = L1/R1 · TAB/R = L2/R2 · ENTER = START · V = SELECT",bios:[{name:"scph5501.bin",req:true,desc:"US BIOS (recommended)"},{name:"scph5500.bin",req:false,desc:"JP BIOS"},{name:"scph5502.bin",req:false,desc:"EU BIOS"},{name:"scph1001.bin",req:false,desc:"US BIOS (alt)"}]},
+    {id:"psp",name:"PlayStation Portable",short:"PSP",maker:"Sony",year:2004,core:"psp",threads:true,color:"#6b6bb0",note:"handheld · needs a fast PC",exts:["iso","cso","pbp","chd","elf","prx","zip","7z"],kind:"handheld",controls:"ARROWS = D-PAD · T/G/F/H = ANALOG · Z = CROSS · X = CIRCLE · A = SQUARE · S = TRIANGLE · Q/E = L/R · ENTER = START · V = SELECT"},
     {id:"segaMD",name:"Sega Genesis / Mega Drive",short:"GEN",maker:"Sega",year:1988,core:"segaMD",color:"#5a6bff",note:"16-bit home console",exts:["md","gen","bin","smd","sg","zip","7z"],kind:"console",controls:"ARROWS = D-PAD · Z = A · X = B · A = C · ENTER = START · V = MODE"},
     {id:"segaMS",name:"Sega Master System",short:"SMS",maker:"Sega",year:1985,core:"segaMS",color:"#7ab0ff",note:"8-bit home console",exts:["sms","zip","7z"],kind:"console",controls:"ARROWS = D-PAD · Z = 1 · X = 2 · ENTER = PAUSE"},
     {id:"segaGG",name:"Sega Game Gear",short:"GG",maker:"Sega",year:1990,core:"segaGG",color:"#b07898",note:"8-bit handheld",exts:["gg","zip","7z"],kind:"handheld",controls:"ARROWS = D-PAD · Z = 1 · X = 2 · ENTER = START"},
@@ -238,14 +238,14 @@
     {id:"atari5200",name:"Atari 5200",short:"5200",maker:"Atari",year:1982,core:"atari5200",color:"#f28a40",note:"home console",exts:["a52","bin","zip","7z"],kind:"console",controls:"ARROWS = JOYSTICK · Z/X = FIRE · ENTER = START · V = PAUSE",bios:[{name:"5200.rom",req:false,desc:"Atari 5200 BIOS"}]},
     {id:"atari7800",name:"Atari 7800",short:"7800",maker:"Atari",year:1986,core:"atari7800",color:"#e87040",note:"home console",exts:["a78","bin","zip","7z"],kind:"console",controls:"ARROWS = JOYSTICK · Z/X = FIRE 1/2 · ENTER = RESET · V = SELECT",bios:[{name:"7800 BIOS (U).rom",req:false}]},
     {id:"lynx",name:"Atari Lynx",short:"LYNX",maker:"Atari",year:1989,core:"lynx",color:"#e05a5a",note:"16-bit handheld",exts:["lnx","zip","7z"],kind:"handheld",controls:"ARROWS = D-PAD · Z/X = A/B · Q/E = OPTION 1/2 · ENTER = PAUSE",bios:[{name:"lynxboot.img",req:true,desc:"Lynx boot ROM"}]},
-    {id:"jaguar",name:"Atari Jaguar",short:"JAG",maker:"Atari",year:1993,core:"jaguar",color:"#c06a40",note:"64-bit console",exts:["j64","jag","rom","abs","cof","bin","zip","7z"],kind:"console",controls:"ARROWS = D-PAD · Z/X/A = A/B/C · ENTER = PAUSE · V = OPTION"},
+    {id:"jaguar",name:"Atari Jaguar",short:"JAG",maker:"Atari",year:1993,core:"jaguar",color:"#c06a40",note:"64-bit console",coreOptions:{"virtualjaguar_bios":"enabled"},exts:["j64","jag","rom","abs","cof","bin","prg","zip","7z"],kind:"console",controls:"ARROWS = D-PAD · Z/X/A = A/B/C · ENTER = PAUSE · V = OPTION"},
     {id:"pce",name:"PC Engine / TurboGrafx-16",short:"PCE",maker:"NEC",year:1987,core:"pce",color:"#4ab0c0",note:"16-bit console",exts:["pce","sgx","cue","chd","zip","7z"],kind:"console",controls:"ARROWS = D-PAD · Z = II · X = I · ENTER = RUN · V = SELECT",bios:[{name:"syscard3.pce",req:false,desc:"Only for CD games"}]},
     {id:"ws",name:"WonderSwan / Color",short:"WS",maker:"Bandai",year:1999,core:"ws",color:"#c07ac0",note:"handheld",exts:["ws","wsc","pc2","zip","7z"],kind:"handheld",controls:"ARROWS = X-PAD · I/J/K/L = Y-PAD · Z = B · X = A · ENTER = START"},
     {id:"ngp",name:"Neo Geo Pocket / Color",short:"NGP",maker:"SNK",year:1998,core:"ngp",color:"#5ab090",note:"handheld",exts:["ngp","ngc","npc","zip","7z"],kind:"handheld",controls:"ARROWS = D-PAD · Z = A · X = B · ENTER = OPTION"},
     {id:"c64",name:"Commodore 64",short:"C64",maker:"Commodore",year:1982,core:"c64",color:"#6a9cd0",note:"home computer",exts:["d64","t64","prg","crt","g64","x64","tap","zip","7z"],kind:"computer",controls:"ARROWS = JOYSTICK · Z = FIRE · ENTER = RETURN · EMULATOR MENU → KEYBOARD"},
     {id:"amiga",name:"Commodore Amiga",short:"AMIGA",maker:"Commodore",year:1985,core:"amiga",color:"#c0507a",note:"home computer · needs Kickstart",exts:["adf","adz","hdf","lha","ipf","dms","m3u","zip","7z"],kind:"computer",multi:true,controls:"ARROWS = JOYSTICK · Z = FIRE · MOUSE = MOUSE",bios:[{name:"kick34005.A500",req:true,desc:"Kickstart 1.3 (A500)"},{name:"kick40068.A1200",req:false,desc:"Kickstart 3.1 (A1200)"}]},
     {id:"arcade",name:"Arcade (FinalBurn Neo)",short:"ARC",maker:"Various",year:1985,core:"arcade",color:"#6a5ad8",note:"coin-op · CPS / Neo Geo / more",exts:["zip","7z"],kind:"arcade",arcade:true,controls:"ARROWS = JOYSTICK · Z/X/A/S/Q/E = BUTTONS 1-6 · V = INSERT COIN · ENTER = START",bios:[{name:"neogeo.zip",req:false,desc:"Required for Neo Geo games"},{name:"pgm.zip",req:false,desc:"PGM games"}]},
-    {id:"mame",name:"MAME 2003 Plus",short:"MAME",maker:"Various",year:1980,core:"mame",color:"#8ab040",note:"classic arcade (0.78 romset)",exts:["zip","7z"],kind:"arcade",arcade:true,controls:"ARROWS = JOYSTICK · Z/X/A/S/Q/E = BUTTONS 1-6 · V = INSERT COIN · ENTER = START · TAB = MAME MENU",bios:[{name:"neogeo.zip",req:false,desc:"Required for Neo Geo games"}]},
+    {id:"mame",name:"MAME 2003 Plus",short:"MAME",maker:"Various",year:1980,core:"mame",color:"#8ab040",note:"classic arcade (0.78 romset)",coreOptions:{"mame2003-plus_skip_disclaimer":"enabled","mame2003-plus_skip_warnings":"enabled"},exts:["zip","7z"],kind:"arcade",arcade:true,controls:"ARROWS = JOYSTICK · Z/X/A/S/Q/E = BUTTONS 1-6 · V = INSERT COIN · ENTER = START · TAB = MAME MENU",bios:[{name:"neogeo.zip",req:false,desc:"Required for Neo Geo games"}]},
     {id:"dos",name:"MS-DOS (DOSBox Pure)",short:"DOS",maker:"IBM PC",year:1981,core:"dos",threads:true,color:"#3a7cc8",note:"PC games 1980s-90s",exts:["zip","exe","com","bat","iso","cue","img","dosz"],kind:"computer",controls:"KEYBOARD = KEYBOARD (settings → Direct Keyboard Input) · MOUSE = MOUSE · GAMEPAD = MAPPED VIA DOSBox MENU"}
   ];
   SYSTEMS.forEach(function(s){
@@ -287,14 +287,35 @@
   byId("boot").addEventListener("click",triggerBoot);
   document.addEventListener("keydown",triggerBoot);
   // load library while boot screen is displayed
-  var libReady=Promise.all([DB.all("roms"),DB.all("bios"),DB.all("shots"),coresReady.catch(function(){})]).then(function(r){
+  /* Bundled free library (roms/library.json): homebrew, open-source, freeware and rights-holder-released
+     titles for (almost) every system, so each core can be tried without adding anything. Stats for
+     these games (favorite, play count, time, custom name) live in localStorage "rbw-embedded". */
+  var bundledReady=fetch("roms/library.json",{cache:"no-store"}).then(function(r){ return r.ok?r.json():{games:[]}; }).catch(function(){ return {games:[]}; })
+    .then(function(lib){
+      /* games flagged restricted (mamedev.org arcade titles) are fetched at build time by scripts/download-roms.js and
+         are not part of the repository — list them only when the file is really there. */
+      var probes=(lib.games||[]).filter(function(g){ return g.restricted; }).map(function(g){
+        return fetch("roms/"+g.file,{method:"HEAD",cache:"no-store"}).then(function(x){ return [g.file,x.ok]; }).catch(function(){ return [g.file,false]; });
+      });
+      return Promise.all(probes).then(function(res){ lib.present={}; res.forEach(function(p){ lib.present[p[0]]=p[1]; }); return lib; });
+    });
+  var EMB_STATS={}; try{ EMB_STATS=JSON.parse(localStorage.getItem("rbw-embedded")||"{}")||{}; if(EMB_STATS.fav!==undefined&&!EMB_STATS["embedded-2048"]){ EMB_STATS={"embedded-2048":EMB_STATS}; } }catch(e){ EMB_STATS={}; }
+  var libReady=Promise.all([DB.all("roms"),DB.all("bios"),DB.all("shots"),coresReady.catch(function(){}),bundledReady]).then(function(r){
     ROMS=(r[0]||[]).map(function(x){ x.fav=!!x.fav; x.playCount=x.playCount||0; x.playTime=x.playTime||0; return x; });
     (r[1]||[]).forEach(function(b){ BIOS[b.key]=b; });
     (r[2]||[]).forEach(function(s){ try{ SHOTS[s.id]=URL.createObjectURL(s.blob); }catch(e){} });
-    // bundled free demo game
-    if(!ROMS.some(function(x){return x.embedded;})) ROMS.unshift({id:"embedded-2048",sysId:"nes",name:"2048",fileName:"2048.nes",url:"roms/2048.nes",embedded:true,size:24592,added:0,playCount:0,playTime:0,fav:false});
+    // bundled free games (never stored in the DB — they come from the app package)
+    var bundled=((r[4]&&r[4].games)||[]).filter(function(g){ return findSys(g.sys) && !(g.restricted && r[4].present && r[4].present[g.file]===false); }).map(function(g){
+      var st=EMB_STATS[g.id]||{};
+      return {id:g.id,sysId:g.sys,name:st.name||g.name,fileName:g.file,url:"roms/"+g.file,embedded:true,size:g.size||0,added:0,
+        playCount:st.playCount||0,playTime:st.playTime||0,lastPlayed:st.lastPlayed||0,fav:!!st.fav,
+        meta:{author:g.author,year:g.year,license:g.license,desc:g.desc,players:g.players,genre:g.genre,source:g.source,origName:g.name}};
+    });
+    ROMS=bundled.concat(ROMS);
+    // sizes of bundled files (HEAD, local) — shown in the library
+    bundled.forEach(function(g){ fetch(g.url,{method:"HEAD"}).then(function(x){ var n=parseInt(x.headers.get("content-length")||"0",10); if(n){ g.size=n; } }).catch(function(){}); });
     var nCores=Object.keys(CORE_FILES).length, okCores=Object.keys(CORE_FILES).filter(function(c){ return CORE_FILES[c].every(function(f){ return !!CORES.files[f]; }); }).length;
-    byId("bootLog").innerHTML="loading kernel ........ ok<br>mounting library ...... "+(ROMS.length)+" game"+(ROMS.length===1?"":"s")+"<br>loading emulators ..... "+okCores+"/"+nCores+" cores"+(CORES.bytes?" · "+fmtBytes(CORES.bytes):"")+(okCores===nCores?" · offline ready":' · <span class="warn">'+(nCores-okCores)+" missing</span>");
+    byId("bootLog").innerHTML="loading kernel ........ ok<br>mounting library ...... "+(ROMS.length)+" game"+(ROMS.length===1?"":"s")+(bundled.length?" · "+bundled.length+" free":"")+"<br>loading emulators ..... "+okCores+"/"+nCores+" cores"+(CORES.bytes?" · "+fmtBytes(CORES.bytes):"")+(okCores===nCores?" · offline ready":' · <span class="warn">'+(nCores-okCores)+" missing</span>");
     if(okCores<nCores) console.warn("Missing emulator cores:",CORES.missing.join(", "),"— run `npm run cores` to bundle them.");
     byId("boot").classList.add("ready");
     if(view==="systems") renderSystems();
@@ -311,7 +332,7 @@
   function updateFooter(){
     var f=byId("footHints");
     if(view==="systems") f.innerHTML=hint("←→","MOVE")+hint("ENTER / A","OPEN")+hint("F / Y","SEARCH")+hint("S / START","SETTINGS")+hint("H","HELP");
-    else if(view==="library") f.innerHTML=hint("↑↓←→","MOVE")+hint("ENTER / A","PLAY")+hint("SPACE / X","GAME OPTIONS")+hint("F / Y","FILTER")+hint("ESC / B","BACK");
+    else if(view==="library") f.innerHTML=hint("↑↓←→","MOVE")+hint("ENTER / A","PLAY")+hint("SPACE / X","OPTIONS")+hint("I","INFO")+hint("F / Y","FILTER")+hint("ESC / B","BACK");
     else if(view==="player") f.innerHTML="";
     var c=byId("footCount"); c.textContent="SYSTEMS: "+SYSTEMS.length+" · GAMES: "+ROMS.length+(Object.keys(BIOS).length?" · BIOS: "+Object.keys(BIOS).length:"");
   }
@@ -438,7 +459,10 @@
   function renderGames(){
     var sys=findSys(currentSys);
     var g=byId("libGames"); g.innerHTML="";
+    // keep the focus on the same *game* when the list is re-sorted (rename, favorite, play count…)
+    var keepId=libList[focus.lib]?libList[focus.lib].id:null;
     libList=gamesFor(currentSys);
+    if(keepId){ var ni=libList.findIndex(function(x){ return x.id===keepId; }); if(ni>=0) focus.lib=ni; }
     var vm=settings.viewMode||"grid";
     g.className="games "+vm;
     libList.forEach(function(game,idx){
@@ -447,8 +471,8 @@
       el.setAttribute("data-idx",idx);
       el.style.setProperty("--c",gs.color);
       var art = SHOTS[game.id] ? '<img class="shot" src="'+SHOTS[game.id]+'" alt="">' : '<div class="ph">'+gs.icon+'</div>';
-      el.innerHTML='<div class="box">'+art+(game.fav?'<span class="favmark">'+ICON.heart+'</span>':'')+(game.embedded?'<span class="demo">DEMO</span>':'')+'</div>'+
-        '<div class="meta"><div class="t" title="'+esc(game.name)+'">'+esc(game.name)+'</div><div class="s"><span class="sys" style="--c:'+gs.color+'">'+esc(gs.short)+'</span>'+(game.lastPlayed?'<span>'+fmtAgo(game.lastPlayed)+'</span>':'<span>'+fmtBytes(game.size)+'</span>')+(game.embedded?'<span class="demotxt">DEMO</span>':'')+'</div></div>';
+      el.innerHTML='<div class="box">'+art+(game.fav?'<span class="favmark">'+ICON.heart+'</span>':'')+(game.embedded?'<span class="demo">FREE</span>':'')+'</div>'+
+        '<div class="meta"><div class="t" title="'+esc(game.name)+'">'+esc(game.name)+'</div><div class="s"><span class="sys" style="--c:'+gs.color+'">'+esc(gs.short)+'</span>'+(game.lastPlayed?'<span>'+fmtAgo(game.lastPlayed)+'</span>':'<span>'+fmtBytes(game.size)+'</span>')+(game.meta&&game.meta.genre?'<span class="genre">'+esc(game.meta.genre)+'</span>':'')+'</div></div>';
       el.addEventListener("click",function(){ focusGame(idx,false,true); blip("select"); startGame(game); });
       el.addEventListener("contextmenu",function(ev){ ev.preventDefault(); focusGame(idx,false,true); openGameMenu(game); });
       el.addEventListener("mouseenter",function(){ if(hoverOK()) focusGame(idx,false,true); });
@@ -486,8 +510,11 @@
     var d=byId("libDetail");
     if(game){
       var gs=findSys(game.sysId);
-      d.innerHTML='<div class="dt">'+esc(game.name)+'</div><div class="dm">'+esc(gs.name)+' · '+esc(game.fileName)+' · '+fmtBytes(game.size)+'</div>'+
-        '<div class="dm">PLAYED <b>'+(game.playCount||0)+'</b>× · TIME <b>'+fmtDur(game.playTime)+'</b> · LAST <b>'+fmtAgo(game.lastPlayed)+'</b>'+(game.fav?' · <span class="favtxt">'+ICON.heart+' FAVORITE</span>':'')+'</div>';
+      var m=game.meta;
+      d.innerHTML='<div class="dt">'+esc(game.name)+(m?' <span class="dyear">'+(m.year||"")+'</span>':'')+'</div>'+
+        (m?'<div class="dm">'+esc(m.author||"")+(m.genre?' · '+esc(m.genre):'')+(m.players?' · '+m.players+' PLAYER'+(m.players>1?'S':''):'')+' · <span class="lic">'+esc(m.license||"")+'</span></div>':'')+
+        (m&&m.desc?'<div class="dd">'+esc(m.desc)+'</div>':'')+
+        '<div class="dm">'+esc(gs.name)+' · '+esc(game.fileName)+' · '+fmtBytes(game.size)+' · PLAYED <b>'+(game.playCount||0)+'</b>× · TIME <b>'+fmtDur(game.playTime)+'</b> · LAST <b>'+fmtAgo(game.lastPlayed)+'</b>'+(game.fav?' · <span class="favtxt">'+ICON.heart+' FAVORITE</span>':'')+(m?' · <i class="kbd">I</i> INFO':'')+'</div>';
     } else d.innerHTML='<div class="dt">ADD GAMES</div><div class="dm">Pick one or more ROM files — you can also drop files anywhere in this window. Files are stored inside the app, so they stay in your library.</div>';
   }
   function focusCons(i){
@@ -661,17 +688,18 @@
       items:[
         {label:"Play",icon:ICON.play,color:"#7ed957",action:function(){ closeModal(); startGame(game); }},
         {label:game.fav?"Remove from favorites":"Add to favorites",icon:ICON.heart,color:"#ff5a7a",action:function(){ game.fav=!game.fav; persistRom(game); closeModal(); renderIfLibrary(); renderSystems(); toast(game.fav?"ADDED TO <b>FAVORITES</b>":"REMOVED FROM FAVORITES",1500); }},
+        {label:"Game info",sub:game.meta?(game.meta.author||"")+(game.meta.year?" · "+game.meta.year:"")+" · "+(game.meta.license||""):"File details",icon:ICON.info,action:function(){ closeModal(); openGameInfo(game); }},
         {label:"Controls for "+gs.short,sub:"Show the keyboard / pad layout (tattoo)",icon:ICON.keyboard,action:function(){ closeModal(); showControls(gs); }},
         {label:"Rename",icon:ICON.info,hide:settings.kidMode,action:function(){ closeModal(); openPrompt("RENAME GAME",esc(game.fileName),game.name,function(n){ if(n&&n.trim()){ game.name=n.trim(); persistRom(game); renderIfLibrary(); toast("RENAMED"); } }); }},
         {label:"Move to another system",sub:"Current: "+gs.name,icon:ICON.all,disabled:!!game.embedded,hide:settings.kidMode,action:function(){ closeModal(); moveGame(game); }},
         {label:"Clear saved states & box art",sub:"Deletes save states stored for this game",icon:ICON.trash,hide:settings.kidMode,action:function(){ clearGameData(game); closeModal(); }},
-        {label:"Delete game",sub:game.embedded?"Bundled demo cannot be deleted":"Removes the file from the library",icon:ICON.trash,color:"#ff6a6a",disabled:!!game.embedded,hide:settings.kidMode,action:function(){ closeModal(); deleteGame(game); }}
+        {label:"Delete game",sub:game.embedded?"Bundled free games cannot be deleted (hide the system instead)":"Removes the file from the library",icon:ICON.trash,color:"#ff6a6a",disabled:!!game.embedded,hide:settings.kidMode,action:function(){ closeModal(); deleteGame(game); }}
       ]
     });
   }
-  function persistRom(game){ trace("persistRom",game.id); if(game.embedded){ localStorage.setItem("rbw-embedded",JSON.stringify({fav:game.fav,lastPlayed:game.lastPlayed,playCount:game.playCount,playTime:game.playTime,name:game.name})); return Promise.resolve(); } return DB.put("roms",game).catch(function(e){console.warn(e);}); }
+  function persistRom(game){ trace("persistRom",game.id); if(game.embedded){ EMB_STATS[game.id]={fav:game.fav,lastPlayed:game.lastPlayed,playCount:game.playCount,playTime:game.playTime,name:game.name}; localStorage.setItem("rbw-embedded",JSON.stringify(EMB_STATS)); return Promise.resolve(); } return DB.put("roms",game).catch(function(e){console.warn(e);}); }
   function deleteGame(game){
-    if(game.embedded){ toast("THE BUNDLED DEMO CANNOT BE DELETED"); return; }
+    if(game.embedded){ toast("BUNDLED FREE GAMES CANNOT BE DELETED"); return; }
     openModal({title:"DELETE "+game.name.toUpperCase()+"?",sub:"This removes the game (and its saved states) from the library.",items:[
       {label:"Yes, delete",icon:ICON.trash,color:"#ff6a6a",action:function(){ trace("delete",game.id,game.name); ROMS=ROMS.filter(function(r){return r!==game;}); DB.del("roms",game.id).then(function(){ trace("deleted from db",game.id); }).catch(function(e){ console.warn("delete failed",e); toast("&#9888; COULD NOT DELETE FROM STORAGE"); }); clearGameData(game,true); closeModal(); focus.lib=Math.max(0,focus.lib-1); renderIfLibrary(); renderSystems(); toast("DELETED"); }},
       {label:"Cancel",icon:ICON.close,action:closeModal}
@@ -690,8 +718,22 @@
     DB.del("shots",game.id); if(SHOTS[game.id]){ URL.revokeObjectURL(SHOTS[game.id]); delete SHOTS[game.id]; }
     if(!silent){ renderIfLibrary(); toast("SAVED STATES & BOX ART CLEARED"); }
   }
-  // restore embedded game stats
-  try{ var emb=JSON.parse(localStorage.getItem("rbw-embedded")||"null"); if(emb) libReady.then(function(){ var g=ROMS.find(function(r){return r.embedded;}); if(g) Object.assign(g,emb); }); }catch(e){}
+
+  /* ================= game info (attributes) ================= */
+  function openGameInfo(game){
+    var gs=findSys(game.sysId), m=game.meta||{};
+    var row=function(k,v){ return v?'<div class="irow"><span>'+k+'</span><b>'+v+'</b></div>':''; };
+    var html='<div class="ginfo">'+(SHOTS[game.id]?'<img class="gshot" src="'+SHOTS[game.id]+'" alt="">':'')+
+      (m.desc?'<p class="gdesc">'+esc(m.desc)+'</p>':'')+
+      row("SYSTEM",esc(gs.name)+' <i>('+esc(coreLabel(gs))+' core)</i>')+row("AUTHOR",esc(m.author))+row("YEAR",m.year)+row("GENRE",esc(m.genre))+row("PLAYERS",m.players)+
+      row("LICENSE",esc(m.license))+row("FILE",esc(game.fileName)+' · '+fmtBytes(game.size)+(game.extra&&game.extra.length?' (+'+game.extra.length+' track file'+(game.extra.length>1?'s':'')+')':''))+
+      row("ADDED",game.embedded?'bundled with the app':fmtAgo(game.added))+row("STATS",'played '+(game.playCount||0)+'× · '+fmtDur(game.playTime)+' · last '+fmtAgo(game.lastPlayed))+
+      (m.source?row("SOURCE",'<span class="src">'+esc(m.source)+'</span>'):'')+'</div>';
+    openModal({title:game.name.toUpperCase(),sub:game.embedded?"Free game bundled with Recalbox OS Web — see LICENSE for the terms of its author.":"Game in your library",html:html,items:[
+      {label:"Play",icon:ICON.play,color:"#7ed957",action:function(){ closeModal(); startGame(game); }},
+      {label:game.fav?"Remove from favorites":"Add to favorites",icon:ICON.heart,color:"#ff5a7a",action:function(){ game.fav=!game.fav; persistRom(game); closeModal(); renderIfLibrary(); renderSystems(); }},
+      {label:"Close",icon:ICON.close,action:closeModal}]});
+  }
 
   /* ================= controls "tattoo" ================= */
   function showControls(sys,auto){
@@ -732,7 +774,7 @@
       {label:"Export library list",sub:"Download a JSON with your game list & stats",icon:ICON.file,action:function(){ var data=ROMS.map(function(r){return {name:r.name,file:r.fileName,system:r.sysId,fav:r.fav,playCount:r.playCount,playTime:r.playTime,lastPlayed:r.lastPlayed};}); var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download="recalbox-web-library.json"; a.click(); }},
       {label:"Reset all settings",icon:ICON.reset,color:"#ff6a6a",action:function(){ settings=Object.assign({},DEFAULTS); saveSettings(); applyTheme(); rebuild(); toast("SETTINGS RESET"); }},
       {label:"Help & shortcuts",icon:ICON.keyboard,action:function(){ closeModal(); showHelp(); }},
-      {label:"About",sub:"Recalbox OS Web 2.1.0 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.1</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>No games are included except free homebrew. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
+      {label:"About",sub:"Recalbox OS Web 2.2.0 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.2</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>Ships with a free library of homebrew, open-source and freeware games for every system (see roms/LICENSES.md for the authors and their terms) — no commercial ROMs. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
     ]});
   }
   /* ================= emulator cores (bundled, offline) ================= */
@@ -778,7 +820,7 @@
   function showHelp(){
     openModal({title:"HELP & SHORTCUTS",html:'<div class="tattoo">'+
       '<div class="tt-h">SYSTEM VIEW</div><div class="tt-b">← → ↑ ↓ MOVE · ENTER OPEN · F SEARCH ALL GAMES · S SETTINGS · B BIOS MANAGER · H THIS HELP</div>'+
-      '<div class="tt-h">GAME VIEW</div><div class="tt-b">← → ↑ ↓ MOVE · ENTER PLAY · SPACE GAME OPTIONS · F FILTER · R RANDOM GAME · O CHANGE SORT · V GRID/LIST · TAB SYSTEM LIST · ESC BACK · DROP FILES ANYWHERE TO ADD</div>'+
+      '<div class="tt-h">GAME VIEW</div><div class="tt-b">← → ↑ ↓ MOVE · ENTER PLAY · SPACE GAME OPTIONS · I GAME INFO · F FILTER · R RANDOM GAME · O CHANGE SORT · V GRID/LIST · TAB SYSTEM LIST · ESC BACK · DROP FILES ANYWHERE TO ADD</div>'+
       '<div class="tt-h">GAMEPAD (MENUS)</div><div class="tt-b">D-PAD / LEFT STICK MOVE · A OPEN · B BACK · X GAME OPTIONS · Y SEARCH · START SETTINGS · L1/R1 CHANGE SYSTEM</div>'+
       '<div class="tt-h">IN GAME</div><div class="tt-b">F1 EMULATOR MENU · F2 SAVE · F4 LOAD · F6/F7 SLOT · F8 SCREENSHOT · F9 REWIND · SPACE FAST-FORWARD (F10 on computer systems) · P PAUSE · F11 FULLSCREEN · CTRL+F12 CONTROL CENTER · ESC QUIT — GAMEPAD: HOLD '+hotkeyName()+' + BUTTON</div></div>',
       items:[{label:"OK",icon:ICON.check,action:closeModal}]});
@@ -842,6 +884,8 @@
       "rewindEnabled":settings.rewind?"enabled":"disabled",
       "menubarBehavior":"anywhere"
     };
+    // per-system libretro core options (written to retroarch-core-options.cfg before the core boots)
+    if(sys.coreOptions){ Object.keys(sys.coreOptions).forEach(function(k){ window.EJS_defaultOptions[k]=sys.coreOptions[k]; }); }
     window.EJS_Buttons={playPause:true,restart:true,mute:true,settings:true,fullscreen:true,saveState:true,loadState:true,quickSave:true,quickLoad:true,screenshot:true,screenRecord:false,gamepad:true,cheat:true,volumeSlider:true,saveSavFiles:true,loadSavFiles:true,cacheManager:false,exitEmulation:true,netplay:false,contextMenu:true,diskButton:true};
 
     started=false;
@@ -886,6 +930,14 @@
       var start=function(){
         window.EJS_emulator=new window.EmulatorJS("#ejsHost",config);
         var em=window.EJS_emulator;
+        // EmulatorJS 4.2.3 quirk: when localStorage is available but this game has no saved
+        // settings yet, getCoreSettings() returns "" and ignores config.defaultOptions, so the
+        // per-system core options (Jaguar BIOS boot, MAME disclaimer skip…) would never reach
+        // the core on a first launch. Append them to whatever the runtime produces.
+        if(sys.coreOptions){
+          var gcs=em.getCoreSettings.bind(em);
+          em.getCoreSettings=function(){ var out=gcs()||""; Object.keys(sys.coreOptions).forEach(function(k){ if(out.indexOf(k+" ")===-1) out+=k+' = "'+sys.coreOptions[k]+'"\n'; }); return out; };
+        }
         installPadHotkeys(em);
         em.on("ready",function(){ setLoad("STARTING…"); });
         em.on("start",onGameStart);
@@ -1028,7 +1080,14 @@
      In game: we wrap EmulatorJS's gamepad listeners so HOTKEY combos are consumed *before* they reach the
      core (a RetroBat/RetroArch-style hotkey-enable button); a plain tap of the HOTKEY button still passes
      through as a short press, so SELECT keeps working for coins / menus. */
-  var padPrev={}, padRepeat={};
+  var padPrev={}, padRepeat={}, padMuteUntil=0;
+  /* When the player closes, buttons that are still held (e.g. the A that confirmed QUIT) must not be
+     re-interpreted as fresh presses in the menu: snapshot the pad state and mute the menu for a moment. */
+  function padSync(ms){
+    var pads=navigator.getGamepads?navigator.getGamepads():[];
+    for(var p=0;p<pads.length;p++){ var gp=pads[p]; if(!gp)continue; var st=padPrev[gp.index]||(padPrev[gp.index]={}); gp.buttons.forEach(function(b,i){ st[i]=b.pressed||b.value>0.6; }); }
+    padMuteUntil=Date.now()+(ms||350);
+  }
   var BTN={A:0,B:1,X:2,Y:3,L1:4,R1:5,L2:6,R2:7,SELECT:8,START:9,L3:10,R3:11,UP:12,DOWN:13,LEFT:14,RIGHT:15,HOME:16};
   var hk={held:false,combo:false,downAt:0,ev:null}, ffHeld=false;
   function installPadHotkeys(em){
@@ -1107,6 +1166,7 @@
   requestAnimationFrame(pollPads);
   function onPadButton(b,down,idx,repeat){
     if(down) mouse.active=false;
+    if(down && view!=="player" && Date.now()<padMuteUntil) return;
     if(view==="player"){
       // while a game runs, EmulatorJS's gamepad handler (wrapped by installPadHotkeys) owns the pad
       if(!started && down && (b===BTN.B||b===BTN.START)) abortLoad();
@@ -1185,6 +1245,7 @@
       if(e.key==="Escape"||e.key==="Backspace"){ e.preventDefault(); blip("back"); showSystems(); return; }
       if(e.key==="f"||e.key==="F"||e.key==="/"){ e.preventDefault(); byId("libSearch").focus(); byId("libSearch").select(); return; }
       if(e.key==="r"||e.key==="R"){ e.preventDefault(); randomGame(); return; }
+      if((e.key==="i"||e.key==="I")&&gameFocus){ e.preventDefault(); openGameInfo(gameFocus); return; }
       if(e.key==="o"||e.key==="O"){ e.preventDefault(); cycleSort(); return; }
       if(e.key==="v"||e.key==="V"){ e.preventDefault(); byId("libView").click(); return; }
       if(e.key==="s"||e.key==="S"){ e.preventDefault(); openSettings(); return; }
@@ -1363,6 +1424,7 @@
     byId("plLoading").style.display="none";
     if(document.fullscreenElement){ try{ document.exitFullscreen(); }catch(e){} }
     var g=current; current=null; started=false; quitting=false; rewinding=false; ffHeld=false; hk.held=false; hk.combo=false;
+    padSync(400);
     if(g) persistRom(g);
     // some cores leave the WASM running until Module.abort(); EmulatorJS handles it with a 1 s timer.
     // If a threaded core (PSP/DOS) was used, a full reload is the only reliable way to release memory.
@@ -1401,6 +1463,10 @@
   }
 
   window.addEventListener("unhandledrejection",function(ev){ var m=String((ev.reason&&ev.reason.message)||ev.reason||""); if(/Wake Lock|wakeLock/i.test(m)) ev.preventDefault(); });
-  window.RBW={version:"2.1.0",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,state:function(){ return {view:view,currentSys:currentSys,game:current&&current.name,started:started,quitting:quitting,ccOpen:ccOpen,roms:ROMS.length,bios:Object.keys(BIOS).length,settings:settings}; }};
+  window.RBW={version:"2.2.0",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,
+    roms:function(){ return ROMS; }, systems:function(){ return SYSTEMS; },
+    play:function(id){ var g=ROMS.find(function(r){return r.id===id;}); if(g){ if(view!=="library"||currentSys!==g.sysId) openLibrary(g.sysId); startGame(g); } return !!g; },
+    open:function(sysId){ openLibrary(sysId); }, home:function(){ showSystems(); },
+    state:function(){ return {view:view,currentSys:currentSys,game:current&&current.name,started:started,quitting:quitting,ccOpen:ccOpen,roms:ROMS.length,bios:Object.keys(BIOS).length,settings:settings}; }};
   console.log("RECALBOX OS WEB READY");
 })();
