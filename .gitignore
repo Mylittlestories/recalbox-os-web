@@ -4,7 +4,7 @@ dist/
 www/data/cores/*.data
 www/data/cores/*.zip
 www/data/cores/*.part
-www/data/cores/reports/
+www/data/cores/reports
 www/data/cores/manifest.json
 *.log
 # mamedev.org arcade ROMs: free for non-commercial use but approved for distribution on mamedev.org only —
