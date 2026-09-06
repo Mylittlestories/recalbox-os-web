@@ -596,6 +596,7 @@
       if(needChoice.length) askSystemFor(needChoice);
       renderSystems();
       if(afterAddOpenBios){ var ob=afterAddOpenBios; afterAddOpenBios=null; setTimeout(function(){ openBios(ob.sys,ob.name); },350); }
+      if(afterAddBatch){ var ab=afterAddBatch; afterAddBatch=null; setTimeout(ab,400); }
     });
   }
   /* ================= arcade romset check =================
@@ -606,6 +607,7 @@
      is added, and the verdict is shown instead of the menu. */
   var ARCADE_DB={};            // core -> {sets:{name:[desc,year,manufacturer,parent,bios,[files],[inherited]]}, bios:[...], biosSets:{name:[desc,[required],[optional]]}}
   var afterAddOpenBios=null;   // {sys,name} → open the BIOS manager on that row when the current add-batch is finished
+  var afterAddBatch=null;      // function → run when the current add-batch is finished (e.g. BIOS files that came with a game drop)
   function arcadeDbFor(sys){
     var id = sys.core==="mame" ? "mame2003plus" : sys.core==="arcade" ? "fbneo" : null;
     if(!id) return Promise.resolve(null);
@@ -696,7 +698,7 @@
           if(!biosRec){
             r.needsBios=bios+".zip"; r.biosState="missing";
           } else if(biosDef && biosEntries){
-            var b=cmp(biosDef[1],biosEntries), biosBad=b.missing.concat(b.wrong);
+            var b=cmp(biosDef[1],biosEntries), biosBad=b.missing.concat(sys.core==="mame"?b.wrong.filter(function(n){ return !/^(mame\.sm1|sfix\.sfx)$/i.test(n); }):b.wrong);   // MAME: those two only warn
             if(biosBad.length){ r.needsBios=bios+".zip"; r.biosState="incomplete"; r.biosBad=biosBad; }
             else r.notes.push("BIOS "+bios+".zip installed ✓");
           } else if(biosRec) r.notes.push("BIOS "+bios+".zip installed");
@@ -794,15 +796,224 @@
   document.addEventListener("dragenter",function(e){ e.preventDefault(); dragDepth++; if(view==="library"||view==="systems") byId("dropOverlay").classList.add("on"); });
   document.addEventListener("dragover",function(e){ e.preventDefault(); });
   document.addEventListener("dragleave",function(e){ e.preventDefault(); dragDepth=Math.max(0,dragDepth-1); if(!dragDepth) byId("dropOverlay").classList.remove("on"); });
+  /* files of a drop, folders included (Chromium hands a dropped folder over as one directory entry — walk it) */
+  function droppedFiles(dt){
+    var items=Array.prototype.slice.call(dt.items||[]), entries=[];
+    items.forEach(function(it){ try{ var en=it.webkitGetAsEntry&&it.webkitGetAsEntry(); if(en) entries.push(en); }catch(e){} });   // must be read synchronously, during the event
+    if(!entries.length || !entries.some(function(en){ return en.isDirectory; })) return Promise.resolve(Array.prototype.slice.call(dt.files||[]));
+    var out=[], MAX=4000;
+    var walk=function(en,depth){
+      if(out.length>=MAX||depth>6) return Promise.resolve();
+      if(en.isFile) return new Promise(function(res){ en.file(function(f){ if(!/^\./.test(f.name)) out.push(f); res(); },function(){ res(); }); });
+      if(!en.isDirectory || /^\./.test(en.name)) return Promise.resolve();
+      var reader=en.createReader(), all=[];
+      var readAll=function(){ return new Promise(function(res){ reader.readEntries(function(batch){ if(!batch.length) return res(); all=all.concat(Array.prototype.slice.call(batch)); readAll().then(res); },function(){ res(); }); }); };
+      return readAll().then(function(){ return all.reduce(function(pr,child){ return pr.then(function(){ return walk(child,depth+1); }); },Promise.resolve()); });
+    };
+    return entries.reduce(function(pr,en){ return pr.then(function(){ return walk(en,0); }); },Promise.resolve()).then(function(){ return out; });
+  }
   document.addEventListener("drop",function(e){
     e.preventDefault(); dragDepth=0; byId("dropOverlay").classList.remove("on");
     if(view==="player") return;
-    var files=Array.prototype.slice.call(e.dataTransfer.files||[]); if(!files.length)return;
-    if(view==="systems"){ currentSys=null; }
-    addFiles(files, view==="systems"?null:undefined);
+    droppedFiles(e.dataTransfer).then(function(files){ if(files.length) handleDrop(files); });
   });
+  function handleDrop(files){
+    // BIOS files (a RetroBIOS pack, a system/ folder, a single scph5501.bin …) dropped anywhere → BIOS import
+    var biosOpen=modal.classList.contains("open") && /^BIOS/.test(byId("modalTitle").textContent);
+    splitBiosDrop(files).then(function(sp){
+      var bsys=biosOpen?findSys(currentSys):null; if(bsys&&!bsys.bios) bsys=null;
+      // a BIOS pack / folder (BIOS files are the majority, or the BIOS manager is open) → import; stray files are listed as ignored
+      if(sp.bios.length && (biosOpen || sp.bios.length>=sp.games.length)){ biosImportDialog(files,bsys); return; }
+      if(!sp.games.length) return;
+      if(view==="systems"){ currentSys=null; }
+      if(sp.bios.length) afterAddBatch=function(){ biosImportDialog(sp.bios,null); };   // a few BIOS files among games → imported once the games are in
+      addFiles(sp.games, view==="systems"?null:undefined);
+    });
+  }
+  /* is this dropped batch BIOS material? names known to the BIOS table (or its aliases) / arcade BIOS zips / small
+     files whose checksum is a known BIOS dump. Game files never match: the CRC table only holds BIOS dumps. */
+  function splitBiosDrop(files){
+    return biosDb().then(function(db){
+      var bios=[], games=[];
+      return Promise.all(files.map(function(f){
+        var base=f.name.split(/[\/]/).pop().toLowerCase();
+        var listed=Object.keys(db.files).some(function(n){ return n.toLowerCase()===base; }) || !!db.aliases[base] || !!db.zips[base];
+        if(listed){ bios.push(f); return; }
+        if(f.size<=4*1024*1024 && !/\.(nes|sfc|smc|gb|gbc|gba|nds|z64|n64|v64|md|gen|sms|gg|a26|a52|a78|lnx|j64|pce|ws|wsc|ngp|ngc|d64|t64|prg|adf|cue|iso|chd|pbp|exe|7z|m3u)$/i.test(base))
+          return crcOfBlob(f).then(function(crc){ if(db.byCrc[crc]) bios.push(f); else games.push(f); });
+        games.push(f);
+      })).then(function(){ return {bios:bios,games:games}; });
+    });
+  }
 
   /* ================= BIOS manager ================= */
+  /* ================= BIOS verification (offline, RetroBIOS checksums) =================
+     www/data/bios-db.json is built from the RetroBIOS catalogue (github.com/Abdess/retrobios — MIT metadata,
+     no BIOS data): for every BIOS name the app lists, the CRC32/SHA-1/size of the dumps that are known-good,
+     the other names the same dumps go by (GBA_bios.rom → gba_bios.bin …) and which arcade BIOS zips exist.
+     Everything is computed locally on the picked file — the app never opens a network connection. */
+  var BIOS_DB=null, biosDbP=null;
+  function biosDb(){
+    if(BIOS_DB) return Promise.resolve(BIOS_DB);
+    if(!biosDbP) biosDbP=fetch("data/bios-db.json").then(function(r){ return r.ok?r.json():null; }).then(function(j){ BIOS_DB=j||{files:{},byCrc:{},aliases:{},zips:{}}; return BIOS_DB; }).catch(function(){ BIOS_DB={files:{},byCrc:{},aliases:{},zips:{}}; return BIOS_DB; });
+    return biosDbP;
+  }
+  function crcOfBlob(blob){ return blob.arrayBuffer().then(function(ab){ return ("00000000"+crc32(new Uint8Array(ab)).toString(16)).slice(-8); }); }
+  /* which listed BIOS name does this file stand for? (exact name, RetroBIOS alias, or the checksum) */
+  function biosNameFor(fileName,crc,db){
+    var base=fileName.split(/[\\/]/).pop(), low=base.toLowerCase();
+    var exact=Object.keys(db.files).filter(function(n){ return n.toLowerCase()===low; })[0];
+    if(exact) return exact;
+    if(db.aliases[low]) return db.aliases[low];
+    if(crc && db.byCrc[crc]) return db.byCrc[crc];
+    return null;
+  }
+  /* verdict for one BIOS file that is (about to be) stored under `name` for `sys`
+     → {state:"verified"|"unknown"|"wrong"|"unlisted", check (short text for the row), msg (long), crc} */
+  function biosVerdict(db,name,crc,size){
+    var def=db.files[name];
+    if(!def) return {state:"unlisted",check:"",crc:crc};
+    var hit=def.ok.filter(function(o){ return o.crc===crc; })[0];
+    if(hit){ var srcName=hit.src.split("/").pop().replace(/\.[0-9a-f]{8}$/,""); return {state:"verified",check:"verified \u2713 "+(srcName.toLowerCase()!==name.toLowerCase()?"= "+srcName:"RetroBIOS"),short:"verified \u2713",msg:"Checksum matches a known-good dump (RetroBIOS: "+hit.label+", CRC32 "+crc+").",crc:crc}; }
+    var other=db.byCrc[crc];
+    if(other && other!==name) return {state:"wrong",check:"\u26a0 this is "+other,other:other,msg:"This file is not "+name+": its checksum is the one of <b>"+esc(other)+"</b> ("+(db.files[other]?db.files[other].sys:"")+"). It will be treated as "+esc(name)+" by the emulator and most likely fail.",crc:crc};
+    if(def.size.indexOf(size)<0) return {state:"wrong",check:"\u26a0 wrong size ("+fmtBytes(size)+")",msg:"<b>"+esc(name)+"</b> is "+def.size.map(fmtBytes).join(" or ")+" — this file is "+fmtBytes(size)+". It is not a "+esc(name)+" dump (maybe a header, a different file or an incomplete download).",crc:crc};
+    return {state:"unknown",check:"unknown checksum "+crc,msg:"Right name and size, but CRC32 <b>"+crc+"</b> is not one of the "+def.ok.length+" known-good "+esc(name)+" dumps ("+def.ok.map(function(o){ return o.crc; }).slice(0,4).join(", ")+(def.ok.length>4?" \u2026":"")+"). It may still work (another revision / a patched BIOS) — if games fail, replace it.",crc:crc};
+  }
+  function verifyBios(sys,name,file){
+    return Promise.all([biosDb(),crcOfBlob(file)]).then(function(r){ return biosVerdict(r[0],name,r[1],file.size); });
+  }
+  /* one-drop import: any batch of files (a RetroBIOS pack, RetroArch `system/`, Recalbox `bios/` …) → route each
+     file to the system + name it belongs to; returns {plan:[{file,sys,name,verdict}], ignored:[names]} */
+  function planBiosImport(files){
+    return biosDb().then(function(db){
+      var plan=[], ignored=[], seen={};
+      var jobs=files.map(function(f){
+        var base=f.name.split(/[\\/]/).pop(), low=base.toLowerCase();
+        if(/^\./.test(base) || /\.(txt|md|json|yml|yaml|html|png|jpg|cfg|dat|sh|ps1|py)$/i.test(base)) { ignored.push(base); return Promise.resolve(); }
+        if(db.zips[low]){                                   // arcade BIOS zip (neogeo.zip, pgm.zip, playch10.zip …) → every arcade core that uses it
+          var q=db.zips[low].map(function(sid){ var sys=findSys(sid); return checkBiosZip(sys,low,f).then(function(v){ plan.push({file:f,sys:sys,name:low,zip:true,verdict:v}); }); });
+          return Promise.all(q);
+        }
+        // small files only get hashed (BIOS files are < 4 MB; a DSi NAND or a soundfont is not a BIOS we list)
+        if(f.size>8*1024*1024){ ignored.push(base); return Promise.resolve(); }
+        return crcOfBlob(f).then(function(crc){
+          var name=biosNameFor(base,crc,db);
+          if(!name){ ignored.push(base); return; }
+          var sys=findSys(db.files[name].sys); if(!sys) { ignored.push(base); return; }
+          var key=sys.id+"/"+name, v=biosVerdict(db,name,crc,f.size);
+          // several candidates for one slot (e.g. sega_100.bin + SAT_1.00) → keep the verified one, then the exactly-named one
+          var prev=seen[key];
+          var rank=function(e){ return (e.verdict.state==="verified"?2:e.verdict.state==="unknown"?1:0)*2 + (e.file.name.split(/[\\/]/).pop().toLowerCase()===name.toLowerCase()?1:0); };
+          var entry={file:f,sys:sys,name:name,verdict:v,renamed:base.toLowerCase()!==name.toLowerCase()};
+          if(!prev){ seen[key]=entry; plan.push(entry); }
+          else if(rank(entry)>rank(prev)){ plan[plan.indexOf(prev)]=entry; seen[key]=entry; }
+        });
+      });
+      return Promise.all(jobs).then(function(){
+        plan.sort(function(a,b){ return a.sys.name===b.sys.name ? a.name.localeCompare(b.name) : a.sys.name.localeCompare(b.sys.name); });
+        return {plan:plan,ignored:ignored};
+      });
+    });
+  }
+  function storeBios(sys,file,name,check){ var rec={key:sys.id+"/"+name,sysId:sys.id,fileName:name,size:file.size,blob:file,check:check||""}; BIOS[rec.key]=rec; return DB.put("bios",rec); }
+  /* the import dialog: what was recognised, where it goes, what it replaces — then one click installs everything */
+  function biosImportDialog(files,fromSys){
+    if(!files.length) return;
+    toast("CHECKING "+files.length+" FILE"+(files.length===1?"":"S")+" \u2026",2500);
+    planBiosImport(files).then(function(res){
+      var plan=res.plan;
+      if(!plan.length){
+        openModal({title:"NO BIOS FILES RECOGNISED",sub:files.length+" file"+(files.length===1?"":"s")+" checked",html:'<div class="verdict warn">None of these files is a BIOS this app lists (by name, by RetroBIOS alias or by checksum).'+
+          '<p class="hint">Files: '+esc(res.ignored.slice(0,8).join(", "))+(res.ignored.length>8?" \u2026":"")+'</p><p>To install a BIOS under a name of your own, use <b>Add any other BIOS file\u2026</b> in the BIOS manager of the system.</p></div>',
+          items:[{label:"OK",icon:ICON.check,action:closeModal}]});
+        return;
+      }
+      var usable=plan.filter(function(e){ return e.zip ? (e.verdict.level!=="bad"||e.verdict.convertible) : e.verdict.state!=="wrong"; });
+      var nConvert=plan.filter(function(e){ return e.zip && e.verdict.convertible; }).length;
+      var nVerified=plan.filter(function(e){ return e.zip ? e.verdict.level==="ok" : e.verdict.state==="verified"; }).length;
+      var nReplace=plan.filter(function(e){ return BIOS[e.sys.id+"/"+e.name]; }).length;
+      var systems=plan.map(function(e){ return e.sys.short; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+      var rows=plan.map(function(e){
+        var st=e.zip ? (e.verdict.level==="ok"?"ok":e.verdict.level==="bad"?"bad":"warn") : (e.verdict.state==="verified"?"ok":e.verdict.state==="wrong"?"bad":"warn");
+        var what=e.zip ? (e.verdict.level==="ok"?"verified \u2713 "+(e.verdict.summary||""):e.verdict.level==="bad"?(e.verdict.convertible?"current-MAME layout \u2192 will be converted for MAME 2003-Plus":"wrong version for this core"):"usable \u2713 "+(e.verdict.summary||"")) : (e.renamed&&e.verdict.short?e.verdict.short:e.verdict.check);
+        if(e.zip && e.verdict.convertible) st="warn";
+        return '<div class="imp-row '+st+'"><span class="imp-sys" style="--c:'+e.sys.color+'">'+esc(e.sys.short)+'</span><span class="imp-name"><b>'+esc(e.name)+'</b>'+(e.renamed?'<small>from '+esc(e.file.name.split(/[\\/]/).pop())+'</small>':'')+'</span><span class="imp-st">'+esc(what)+(BIOS[e.sys.id+"/"+e.name]?' \u00b7 replaces installed':'')+'</span></div>';
+      }).join("");
+      var doInstall=function(only){
+        var list=only||usable; closeModalOnly(); if(nConvert) toast("CONVERTING NEOGEO.ZIP FOR MAME 2003-PLUS \u2026",4000);
+        Promise.all(list.map(function(e){
+          if(e.zip && e.verdict.convertible) return convertNeoGeoBios(e.file).then(function(nf){ return checkBiosZip(e.sys,e.name,nf).then(function(v2){ return storeBios(e.sys,nf,e.name,"converted \u2713 "+(v2.summary||"")); }); }).catch(function(){ return storeBios(e.sys,e.file,e.name,e.verdict.summary||""); });
+          return storeBios(e.sys,e.file,e.name,e.zip?(e.verdict.summary||""):e.verdict.check);
+        })).then(function(){
+          toast("BIOS INSTALLED: <b>"+list.length+"</b> FILE"+(list.length===1?"":"S")+" \u00b7 "+systems.join(", "),4000); blip("select");
+          renderSystems(); if(view==="library") renderIfLibrary();
+          if(fromSys) openBios(fromSys);
+        });
+      };
+      var items=[];
+      if(usable.length) items.push({label:"Install "+usable.length+" file"+(usable.length===1?"":"s")+(usable.length<plan.length?" (skip the "+(plan.length-usable.length)+" wrong)":""),sub:nVerified+" verified against RetroBIOS checksums"+(nConvert?" \u00b7 neogeo.zip converted for MAME 2003-Plus":"")+(nReplace?" \u00b7 "+nReplace+" already installed will be replaced":""),icon:ICON.check,color:"#7ed957",action:function(){ doInstall(); }});
+      if(usable.length<plan.length && plan.length>usable.length) items.push({label:"Install all "+plan.length+", including the wrong ones",icon:ICON.chip,color:"#ff6a6a",action:function(){ doInstall(plan); }});
+      items.push({label:"Cancel",icon:ICON.close,action:closeModal});
+      openModal({title:"BIOS IMPORT \u00b7 "+plan.length+" FILE"+(plan.length===1?"":"S")+" RECOGNISED",sub:files.length+" file"+(files.length===1?"":"s")+" checked \u00b7 "+systems.length+" system"+(systems.length===1?"":"s")+(res.ignored.length?" \u00b7 "+res.ignored.length+" ignored (not a BIOS this app lists)":""),
+        html:'<div class="imp">'+rows+'</div>'+(res.ignored.length&&res.ignored.length<=6?'<p class="hint imp-ign">Ignored: '+esc(res.ignored.join(", "))+'</p>':''),items:items});
+    });
+  }
+  var biosDirInput=document.createElement("input"); biosDirInput.type="file"; biosDirInput.multiple=true; biosDirInput.style.display="none"; biosDirInput.setAttribute("webkitdirectory",""); document.body.appendChild(biosDirInput);
+  var biosBatchInput=document.createElement("input"); biosBatchInput.type="file"; biosBatchInput.multiple=true; biosBatchInput.style.display="none"; document.body.appendChild(biosBatchInput);
+  function pickBiosFolder(fromSys,filesNotFolder){
+    var inp=filesNotFolder?biosBatchInput:biosDirInput;
+    inp.onchange=function(){ var files=Array.prototype.slice.call(inp.files); inp.value=""; biosImportDialog(files,fromSys); };
+    inp.click();
+  }
+  /* Neo Geo BIOS for MAME 2003-Plus: the core opens the MAME 0.78 names (mame.sm1, sfix.sfx, mamelo.lo …) that no
+     current romset / BIOS pack carries any more. The data is the same — so build them from a current-MAME / FBNeo
+     neogeo.zip: copies under the old names + the first 64 KB of 000-lo.lo (= mamelo.lo, exact CRC). The two sound/fix
+     ROMs of newer dumps have other checksums than the 0.78 DAT; MAME only WARNS about that and the games run
+     (verified: Metal Slug 3 boots and plays). Returns a Promise<File> named neogeo.zip. */
+  var NEOGEO_078_MAP=[["sm1.sm1","mame.sm1"],["sfix.sfix","sfix.sfx"],["sp-s3.sp1","asia-s3.rom"],["sp-u2.sp1","usa_2slt.bin"],["neodebug.bin","neodebug.rom"]];
+  function convertNeoGeoBios(file){
+    return zipEntriesFull(file).then(function(entries){
+      var by={}; entries.forEach(function(e){ by[e.name.split("/").pop().toLowerCase()]=e; });
+      if(!by["000-lo.lo"]||!by["sm1.sm1"]||!by["sfix.sfix"]) throw new Error("not a current-MAME / FBNeo neogeo.zip (000-lo.lo, sm1.sm1, sfix.sfix expected)");
+      var out=[];
+      return Promise.all(entries.map(function(e){ return zipRead(file,e).then(function(u8){ out.push({name:e.name.split("/").pop(),blob:new Blob([u8])}); return u8; }); })).then(function(){
+        var have={}; out.forEach(function(o){ have[o.name.toLowerCase()]=o; });
+        NEOGEO_078_MAP.forEach(function(m){ if(have[m[0]] && !have[m[1]]) out.push({name:m[1],blob:have[m[0]].blob}); });
+        if(!have["mamelo.lo"]) out.push({name:"mamelo.lo",blob:have["000-lo.lo"].blob.slice(0,65536)});
+        return makeZip(out,"neogeo.zip");
+      });
+    });
+  }
+  /* full central directory (offsets + method + sizes) and a reader for one entry (stored or deflate via DecompressionStream) */
+  function zipEntriesFull(blob){
+    var tail=Math.min(blob.size,66*1024);
+    return blob.slice(blob.size-tail).arrayBuffer().then(function(ab){
+      var u=new Uint8Array(ab), dv=new DataView(ab), eocd=-1;
+      for(var i=u.length-22;i>=0;i--){ if(u[i]===0x50&&u[i+1]===0x4b&&u[i+2]===0x05&&u[i+3]===0x06){ eocd=i; break; } }
+      if(eocd<0) throw new Error("not a zip");
+      var count=dv.getUint16(eocd+10,true), cdSize=dv.getUint32(eocd+12,true), cdOff=dv.getUint32(eocd+16,true);
+      return blob.slice(cdOff,cdOff+cdSize).arrayBuffer().then(function(cd){
+        var c=new Uint8Array(cd), d=new DataView(cd), p=0, list=[], td=new TextDecoder();
+        for(var n=0;n<count&&p+46<=c.length;n++){
+          if(d.getUint32(p,true)!==0x02014b50) break;
+          var nl=d.getUint16(p+28,true), el=d.getUint16(p+30,true), cl=d.getUint16(p+32,true);
+          var e={method:d.getUint16(p+10,true),crc:("00000000"+d.getUint32(p+16,true).toString(16)).slice(-8),csize:d.getUint32(p+20,true),size:d.getUint32(p+24,true),offset:d.getUint32(p+42,true),name:td.decode(c.subarray(p+46,p+46+nl))};
+          if(!/\/$/.test(e.name)) list.push(e); p+=46+nl+el+cl;
+        }
+        return list;
+      });
+    });
+  }
+  function zipRead(blob,e){
+    return blob.slice(e.offset,e.offset+30).arrayBuffer().then(function(h){
+      var d=new DataView(h); if(d.getUint32(0,true)!==0x04034b50) throw new Error("bad local header");
+      var start=e.offset+30+d.getUint16(26,true)+d.getUint16(28,true), part=blob.slice(start,start+e.csize);
+      if(e.method===0) return part.arrayBuffer().then(function(ab){ return new Uint8Array(ab); });
+      if(e.method!==8 || typeof DecompressionStream==="undefined") throw new Error("unsupported compression");
+      return new Response(part.stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer().then(function(ab){ return new Uint8Array(ab); });
+    });
+  }
   function biosStatus(sys){
     var have=0, missingReq=false;
     (sys.bios||[]).forEach(function(b){ if(BIOS[sys.id+"/"+b.name]) have++; else if(b.req) missingReq=true; });
@@ -819,6 +1030,17 @@
     addRow(focusName);
     return rows;
   }
+  /* the "where from" card: no link is opened by the app (offline by design) — the address is shown as text */
+  function biosSourcesInfo(sys){
+    var names=(sys&&sys.bios||[]).map(function(b){ return b.name; });
+    openModal({title:"WHERE DO BIOS FILES COME FROM?",sub:"This app never downloads anything — you bring the files, it verifies them offline.",
+      html:'<div class="about"><b>RETROBIOS</b> — <span class="url">https://abdess.github.io/retrobios/</span><br>An open, source-verified BIOS catalogue (github.com/Abdess/retrobios) with ready-made packs: the <b>RetroArch pack</b> (flat <i>system/</i> folder \u2014 same file names as this app), the <b>Recalbox pack</b> (<i>bios/</i> folder), RomM, Batocera \u2026<br><br>'+
+           '<b>HOW TO USE IT HERE</b><br>1. Get the pack (or just the files you need) on that site.<br>2. Back in this app: <b>BIOS \u2192 Import a BIOS folder / pack\u2026</b> and pick the unpacked folder \u2014 or drop the files anywhere on this window. Every file is identified by its name <i>or its checksum</i> (RetroBIOS\u2019 own names like <i>GBA_bios.rom</i>, <i>SAT_1.00-(U+E).bin</i>, <i>Kickstart-v1.3\u2026rom</i> are recognised and renamed) and routed to the right system.<br>3. Rows read <b>verified \u2713</b> when the checksum matches a known-good dump.<br><br>'+
+           (names.length?'<b>'+esc(sys.short)+' NEEDS</b> '+esc(names.join(", "))+'<br><br>':'')+
+           '<b>NEO GEO ON MAME 2003-PLUS</b> — every current pack ships the modern <i>neogeo.zip</i> (sm1.sm1, sfix.sfix, 000-lo.lo). MAME 2003-Plus opens the MAME 0.78 names; the BIOS manager offers to <b>convert</b> such a zip on the spot.<br><br>'+
+           '<small>BIOS files are copyrighted by their manufacturers; RetroBIOS distributes them for personal backup / interoperability and this app only stores what you give it, on your machine.</small></div>',
+      items:[{label:"Import a BIOS folder / pack\u2026",icon:ICON.all,color:"#5aa9ff",action:function(){ closeModalOnly(); pickBiosFolder(sys,false); }},{label:"Back",icon:ICON.close,action:function(){ closeModalOnly(); if(sys) openBios(sys); }}]});
+  }
   function openBios(sys,focusName){
     var waiting = sys.arcade ? ROMS.filter(function(r){ return r.sysId===sys.id && r.meta && r.meta.needsBios && !BIOS[sys.id+"/"+r.meta.needsBios]; }) : [];
     var rows=biosRows(sys,focusName);
@@ -829,8 +1051,10 @@
       return {label:b.name+(have?"":"  —  "+(need.length?"NEEDED BY "+need.length+" GAME"+(need.length>1?"S":""):b.req?"REQUIRED":"optional")), sub:sub, icon:have?ICON.check:ICON.file, color:have?"#7ed957":(b.req||need.length?"#ff6a6a":"#8b8b9a"),
         action:function(){ pickBios(sys,b.name); }, secondary: have?{label:"REMOVE",action:function(){ DB.del("bios",sys.id+"/"+b.name).then(function(){ delete BIOS[sys.id+"/"+b.name]; openBios(sys); openLibrary(sys.id,true); }); }}:null };
     });
+    items.push({label:"Import a BIOS folder / pack…",sub:"Pick a whole folder (RetroBIOS pack, RetroArch system/, Recalbox bios/ …): every file is recognised by name or checksum and routed to its system",icon:ICON.all,color:"#5aa9ff",action:function(){ pickBiosFolder(sys,false); }});
     items.push({label:"Add any other BIOS file…",sub:"For files not listed above (name is kept as-is)",icon:ICON.file,action:function(){ pickBios(sys,null); }});
-    openModal({title:"BIOS · "+sys.name.toUpperCase(),sub:"BIOS files are stored inside the app and mounted for the emulator at start. Names must match exactly."+(sys.arcade?" Arcade BIOS zips are verified against the core's romset list when you pick them.":""),items:items});
+    items.push({label:"Where do BIOS files come from?",sub:"RetroBIOS (abdess.github.io/retrobios) — verified packs; this app checks them offline",icon:ICON.info,action:function(){ closeModalOnly(); biosSourcesInfo(sys); }});
+    openModal({title:"BIOS · "+sys.name.toUpperCase(),sub:"BIOS files are stored inside the app and mounted for the emulator at start. Names must match exactly — files are checked against the RetroBIOS checksum table when you pick them, and a whole pack can be dropped on this window."+(sys.arcade?" Arcade BIOS zips are verified against the core's romset list.":""),items:items});
     var fi=rows.findIndex(function(b){ return b.name===focusName; }); if(fi>=0) modalSetFocus(fi,true);
   }
   /* verify an arcade BIOS zip (neogeo.zip, pgm.zip …) against the core's own list of what must be inside
@@ -847,19 +1071,31 @@
         var req=test(def[1]), opt=test(def[2]);
         var r={ok:true,level:"ok",desc:def[0],files:entries.length,reqOk:req.ok,reqTotal:def[1].length,optOk:opt.ok,optTotal:def[2].length};
         r.summary=req.ok+"/"+def[1].length+" system files"+(def[2].length?" · "+opt.ok+"/"+def[2].length+" optional BIOS versions":"");
+        // MAME 2003-Plus only refuses to start when a file is NOT FOUND; a wrong checksum is a warning and the game
+        // runs. The 0.78 DAT hashes of mame.sm1 / sfix.sfx are old dumps — every later dump "mismatches" yet works.
+        var soft = sys.core==="mame" ? req.wrong.filter(function(n){ return /^(mame\.sm1|sfix\.sfx)$/i.test(n); }) : [];
+        if(!req.missing.length && req.wrong.length && soft.length===req.wrong.length){
+          r.level="warn"; r.soft=soft; r.summary=(req.ok+soft.length)+"/"+def[1].length+" system files (⚠ "+soft.join(", ")+" newer dump)"+(def[2].length?" · "+opt.ok+"/"+def[2].length+" optional BIOS versions":"");
+          r.head="USABLE "+name.toUpperCase()+" — NEWER DUMP OF "+soft.join(" / ").toUpperCase();
+          r.msg="All the files MAME 2003-Plus opens are here. <b>"+esc(soft.join(", "))+"</b> "+(soft.length>1?"are":"is")+" a newer dump than the MAME 0.78 list expects: the core logs a <i>WRONG CHECKSUMS</i> warning and <b>plays anyway</b> (this is what a converted current-MAME neogeo.zip looks like).";
+          return r;
+        }
         if(!req.missing.length && !req.wrong.length){
           if(def[2].length && opt.ok===0) r.note="Only the default system ROM is present — fine for playing; the alternate region / Universe BIOS versions are missing, so the BIOS-region option will have no effect.";
           return r;
         }
+        // a current-MAME / FBNeo neogeo.zip offered to MAME 2003-Plus → it can be converted offline (same data, old names)
+        if(sys.core==="mame" && setName==="neogeo" && byName["000-lo.lo"] && byName["sm1.sm1"] && byName["sfix.sfix"]) r.convertible=true;
         // a required file is missing → the core refuses to start ANY game of this board. Say which version this zip is.
         var otherSys=SYSTEMS.filter(function(o){ return o.arcade && o.core!==sys.core; })[0];
         return (otherSys?arcadeDbFor(otherSys):Promise.resolve(null)).then(function(odb){
           var odef=odb&&odb.biosSets?odb.biosSets[setName]:null, looks="";
           if(odef){ var ot=test(odef[1]); if(odef[1].length && !ot.missing.length && !ot.wrong.length) looks = sys.core==="mame" ? "a current-MAME / FinalBurn Neo" : "a MAME 0.78 (MAME 2003)"; }
-          r.ok=false; r.level="bad"; r.head="NOT A USABLE "+name.toUpperCase()+" FOR "+(sys.core==="mame"?"MAME 2003-PLUS":"FINALBURN NEO");
+          r.ok=false; r.level="bad"; r.head=(r.convertible?"CURRENT-MAME "+name.toUpperCase()+" — CONVERT IT FOR MAME 2003-PLUS":"NOT A USABLE "+name.toUpperCase()+" FOR "+(sys.core==="mame"?"MAME 2003-PLUS":"FINALBURN NEO"));
           r.msg=(looks?"This is <b>"+looks+" "+esc(name)+"</b> — it does not have the files this core opens: ":"The core opens these files from "+esc(name)+" and they are not in this zip"+(req.wrong.length?" with the right checksum":"")+": ")+
                 "<b>"+esc(req.missing.concat(req.wrong).slice(0,5).join(", "))+(req.missing.length+req.wrong.length>5?" …":"")+"</b>"+(req.ok?" ("+req.ok+" of "+def[1].length+" match)":"")+". "+
-                "Take <b>"+esc(name)+"</b> from a <b>"+setVer+"</b> romset — the same romset your game zips come from. Without it, "+esc(def[0])+" games only show the emulator menu.";
+                (r.convertible?"The data is the same, only the file names changed since MAME 0.78 (<b>sm1.sm1 → mame.sm1</b>, <b>sfix.sfix → sfix.sfx</b>, <b>000-lo.lo → mamelo.lo</b>). The app can build the MAME 2003-Plus version from this zip, offline, in a second.":
+                "Take <b>"+esc(name)+"</b> from a <b>"+setVer+"</b> romset — the same romset your game zips come from. Without it, "+esc(def[0])+" games only show the emulator menu.");
           return r;
         });
       }).catch(function(){ return {ok:true,level:"ok",summary:""}; });
@@ -869,23 +1105,37 @@
   function pickBios(sys,expectName){
     biosInput.onchange=function(){
       var files=Array.prototype.slice.call(biosInput.files); biosInput.value="";
-      var store=function(f,name,check){ var rec={key:sys.id+"/"+name,sysId:sys.id,fileName:name,size:f.size,blob:f,check:check||""}; BIOS[rec.key]=rec; return DB.put("bios",rec); };
-      var done=function(n){ toast("BIOS INSTALLED: <b>"+n+"</b> FILE"+(n===1?"":"S")); openBios(sys); openLibrary(sys.id,true); renderSystems(); };
+      var store=function(f,name,check){ return storeBios(sys,f,name,check); };
+      var done=function(n,extra){ toast("BIOS INSTALLED: <b>"+n+"</b> FILE"+(n===1?"":"S")+(extra?" · "+extra:""),extra?5000:3000); openBios(sys); openLibrary(sys.id,true); renderSystems(); };
+      // several files at once → the import planner routes them (a whole pack can be dropped on any system's row)
+      if(files.length>1){ biosImportDialog(files,sys); return; }
       // one arcade BIOS zip → verify it against the core's list before storing
       if(sys.arcade && files.length===1 && /\.zip$/i.test(expectName||files[0].name)){
         var f=files[0], name=expectName||f.name;
         checkBiosZip(sys,name,f).then(function(v){
           if(v.level==="ok"){ store(f,name,v.summary).then(function(){ done(1); if(v.note) toast(v.note,5000); }); return; }
-          var items=[
-            {label:"Pick another file",icon:ICON.file,color:"#7ed957",action:function(){ closeModalOnly(); pickBios(sys,expectName); }},
-            {label:v.ok?"Install anyway":"Install anyway (games will not start)",icon:ICON.chip,color:v.ok?"#ffb347":"#ff6a6a",action:function(){ closeModalOnly(); store(f,name,v.summary).then(function(){ done(1); }); }},
-            {label:"Cancel",icon:ICON.close,action:function(){ closeModalOnly(); openBios(sys,name); }}];
+          var items=[];
+          if(v.convertible) items.push({label:"Convert and install as the MAME 2003-Plus neogeo.zip",sub:"builds mame.sm1 / sfix.sfx / mamelo.lo … from this zip — your file is not modified",icon:ICON.chip,color:"#7ed957",action:function(){ closeModalOnly(); toast("CONVERTING NEOGEO.ZIP …",4000);
+              convertNeoGeoBios(f).then(function(nf){ return checkBiosZip(sys,name,nf).then(function(v2){ return store(nf,name,v2.summary).then(function(){ done(1,"converted ✓ "+v2.summary); }); }); }).catch(function(e){ toast("&#9888; CONVERSION FAILED: "+esc(e.message||e),6000); openBios(sys,name); }); }});
+          items.push({label:"Pick another file",icon:ICON.file,color:v.convertible?"#8b8b9a":"#7ed957",action:function(){ closeModalOnly(); pickBios(sys,expectName); }});
+          items.push({label:v.level==="warn"?"Install — it will play":v.ok?"Install anyway":"Install anyway (games will not start)",icon:v.level==="warn"?ICON.check:ICON.chip,color:v.level==="warn"?"#7ed957":v.ok?"#ffb347":"#ff6a6a",action:function(){ closeModalOnly(); store(f,name,v.summary).then(function(){ done(1); }); }});
+          items.push({label:"Cancel",icon:ICON.close,action:function(){ closeModalOnly(); openBios(sys,name); }});
           openModal({title:v.head,sub:esc(f.name)+" · "+esc(sys.name)+" · "+fmtBytes(f.size),html:'<div class="verdict '+v.level+'">'+v.msg+'<p class="hint">'+esc(v.summary)+' · '+v.files+' files in the zip</p></div>',items:items,onClose:function(){ openBios(sys,name); }});
         });
         return;
       }
-      var jobs=files.map(function(f){ var name=(expectName&&files.length===1)?expectName:f.name; return store(f,name); });
-      Promise.all(jobs).then(function(){ done(files.length); });
+      // one plain BIOS file → checksum against the RetroBIOS table; wrong file / wrong name → explain before storing
+      var f1=files[0], nm=expectName||f1.name;
+      verifyBios(sys,nm,f1).then(function(v){
+        if(v.state==="verified"||v.state==="unlisted"){ store(f1,nm,v.check).then(function(){ done(1,v.state==="verified"?"verified ✓":""); }); return; }
+        var items=[];
+        if(v.state==="wrong" && v.other && BIOS_DB.files[v.other]){ var osys=findSys(BIOS_DB.files[v.other].sys); if(osys) items.push({label:"Install it as "+v.other+" for "+osys.short+" instead",sub:"that is what this file really is",icon:ICON.check,color:"#7ed957",action:function(){ closeModalOnly(); storeBios(osys,f1,v.other,"verified ✓ RetroBIOS").then(function(){ toast("BIOS INSTALLED: <b>"+esc(v.other)+"</b> → "+esc(osys.short)); renderSystems(); openBios(sys,nm); }); }}); }
+        items.push({label:"Pick another file",icon:ICON.file,color:"#7ed957",action:function(){ closeModalOnly(); pickBios(sys,expectName); }});
+        items.push({label:v.state==="unknown"?"Install anyway — may work":"Install anyway as "+nm,icon:ICON.chip,color:v.state==="unknown"?"#ffb347":"#ff6a6a",action:function(){ closeModalOnly(); store(f1,nm,v.check).then(function(){ done(1); }); }});
+        items.push({label:"Cancel",icon:ICON.close,action:function(){ closeModalOnly(); openBios(sys,nm); }});
+        openModal({title:v.state==="unknown"?"UNKNOWN "+nm.toUpperCase()+" CHECKSUM":"THIS IS NOT "+nm.toUpperCase(),sub:esc(f1.name)+" · "+esc(sys.name)+" · "+fmtBytes(f1.size)+" · CRC32 "+v.crc,
+          html:'<div class="verdict '+(v.state==="unknown"?"warn":"bad")+'">'+v.msg+'<p class="hint">Checked offline against the RetroBIOS checksum table (abdess.github.io/retrobios).</p></div>',items:items,onClose:function(){ openBios(sys,nm); }});
+      });
     };
     biosInput.click();
   }
@@ -1022,7 +1272,7 @@
       {label:"Export library list",sub:"Download a JSON with your game list & stats",icon:ICON.file,action:function(){ var data=ROMS.map(function(r){return {name:r.name,file:r.fileName,system:r.sysId,fav:r.fav,playCount:r.playCount,playTime:r.playTime,lastPlayed:r.lastPlayed};}); var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download="recalbox-web-library.json"; a.click(); }},
       {label:"Reset all settings",icon:ICON.reset,color:"#ff6a6a",action:function(){ settings=Object.assign({},DEFAULTS); saveSettings(); applyTheme(); rebuild(); toast("SETTINGS RESET"); }},
       {label:"Help & shortcuts",icon:ICON.keyboard,action:function(){ closeModal(); showHelp(); }},
-      {label:"About",sub:"Recalbox OS Web 2.2.3 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.2</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>Ships with a free library of homebrew, open-source and freeware games for every system (see roms/LICENSES.md for the authors and their terms) — no commercial ROMs. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
+      {label:"About",sub:"Recalbox OS Web 2.2.4 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.2</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation. BIOS checksums from the <b>RetroBIOS</b> catalogue (github.com/Abdess/retrobios, MIT metadata) — verified offline.<br><br>Ships with a free library of homebrew, open-source and freeware games for every system (see roms/LICENSES.md for the authors and their terms) — no commercial ROMs. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
     ]});
   }
   /* ================= emulator cores (bundled, offline) ================= */
@@ -1054,8 +1304,10 @@
   function missingBiosReport(){
     var rows=[];
     SYSTEMS.forEach(function(s){ (s.bios||[]).forEach(function(b){ if(!BIOS[s.id+"/"+b.name]) rows.push({s:s,b:b}); }); });
-    if(!rows.length){ openModal({title:"MISSING BIOS CHECK",sub:"All known BIOS files are installed.",items:[{label:"OK",icon:ICON.check,action:closeModal}]}); return; }
-    openModal({title:"MISSING BIOS CHECK",sub:rows.filter(function(r){return r.b.req;}).length+" required · "+rows.filter(function(r){return !r.b.req;}).length+" optional — click a line to install it",items:rows.map(function(r){ return {label:r.b.name,sub:r.s.name+(r.b.desc?" · "+r.b.desc:""),icon:r.b.req?ICON.chip:ICON.file,color:r.b.req?"#ff6a6a":"#8b8b9a",action:function(){ pickBios(r.s,r.b.name); }}; })});
+    var importItem={label:"Import a BIOS folder / pack…",sub:"RetroBIOS pack, RetroArch system/ or Recalbox bios/ folder — every file is recognised by name or checksum and routed to its system",icon:ICON.all,color:"#5aa9ff",action:function(){ pickBiosFolder(null,false); }};
+    var whereItem={label:"Where do BIOS files come from?",icon:ICON.info,action:function(){ closeModalOnly(); biosSourcesInfo(null); }};
+    if(!rows.length){ openModal({title:"MISSING BIOS CHECK",sub:"All known BIOS files are installed.",items:[importItem,{label:"OK",icon:ICON.check,action:closeModal}]}); return; }
+    openModal({title:"MISSING BIOS CHECK",sub:rows.filter(function(r){return r.b.req;}).length+" required · "+rows.filter(function(r){return !r.b.req;}).length+" optional — click a line to install it, or import a whole pack at once",items:[importItem,whereItem].concat(rows.map(function(r){ return {label:r.b.name,sub:r.s.name+(r.b.desc?" · "+r.b.desc:""),icon:r.b.req?ICON.chip:ICON.file,color:r.b.req?"#ff6a6a":"#8b8b9a",action:function(){ pickBios(r.s,r.b.name); }}; }))});
   }
   function storageReport(){
     var total=ROMS.reduce(function(a,r){return a+(r.size||0);},0), bios=Object.keys(BIOS).reduce(function(a,k){return a+(BIOS[k].size||0);},0);
@@ -1251,7 +1503,9 @@
     coreLogTap=function(){ try{ var t=arguments[0]; if(typeof t==="string"&&t.charAt(0)==="["){ if(coreLog.length<400) coreLog.push(t);
       // MAME 2003: a WRONG CHECKSUMS / WRONG LENGTH line is only a warning — the game still boots ("Warnings flagged during
       // ROM loading"); the real failure is "Required files are missing" / NOT FOUND. So remember bad files, fail on the verdict.
-      var mb=/^\[libretro ERROR\] \[MAME 2003\+\] (\S+)\s+(WRONG CHECKSUMS|WRONG LENGTH|NOT FOUND)/.exec(t); if(mb&&!/^OPTIONAL/.test(mb[1])){ if(coreBadFiles.indexOf(mb[1])<0) coreBadFiles.push(mb[1]); }
+      var mb=/^\[libretro ERROR\] \[MAME 2003\+\] (\S+)\s+(WRONG CHECKSUMS|WRONG LENGTH|NOT FOUND)/.exec(t);
+      // mame.sm1 / sfix.sfx of every post-0.78 Neo Geo dump "mismatch" the old DAT and play fine → not a bad file
+      if(mb&&!/^OPTIONAL/.test(mb[1]) && !(mb[2]==="WRONG CHECKSUMS" && /^(mame\.sm1|sfix\.sfx)$/i.test(mb[1]))){ if(coreBadFiles.indexOf(mb[1])<0) coreBadFiles.push(mb[1]); }
       if(/Failed to load content|Game driver not found|Required files are missing|is required$|None of those archives|readroms failed/.test(t)) arcadeFailed(t);
       else if(/Warnings flagged during ROM loading/.test(t) && coreBadFiles.length) arcadeWarned();
     } }catch(e){} return orig.apply(console,arguments); };
@@ -1785,7 +2039,7 @@
   }
 
   window.addEventListener("unhandledrejection",function(ev){ var m=String((ev.reason&&ev.reason.message)||ev.reason||""); if(/Wake Lock|wakeLock/i.test(m)) ev.preventDefault(); });
-  window.RBW={version:"2.2.3",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,
+  window.RBW={version:"2.2.4",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,
     roms:function(){ return ROMS; }, systems:function(){ return SYSTEMS; },
     play:function(id){ var g=ROMS.find(function(r){return r.id===id;}); if(g){ if(view!=="library"||currentSys!==g.sysId) openLibrary(g.sysId); startGame(g); } return !!g; },
     open:function(sysId){ openLibrary(sysId); }, home:function(){ showSystems(); },

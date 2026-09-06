@@ -14,6 +14,14 @@ Windows SmartScreen / macOS Gatekeeper warn because the installers are not code-
 
 Nothing else to install: the installers contain all 25 emulator cores (~92 MB) and the free game library.
 
+## 🆕 What's new in 2.2.4
+
+- **BIOS files are verified when you pick them** — offline, against a checksum table built from the [RetroBIOS](https://abdess.github.io/retrobios/) catalogue (21 names, 47 known-good dumps). Rows read **verified ✓**; a wrong file is named for what it really is (*THIS IS NOT SCPH5502.BIN → it is scph5501.bin → Install it as scph5501.bin instead*); an unknown revision is flagged *unknown checksum — may work* instead of being accepted silently.
+- **One-drop BIOS import.** Drop the unpacked RetroBIOS pack (RetroArch `system/` or Recalbox `bios/` layout) — or any batch of files — anywhere on the window, or use **BIOS → Import a BIOS folder / pack…**. Every file is recognised by name, by RetroBIOS' own name (`GBA_bios.rom`, `SAT_1.00-(U+E).bin`, `Kickstart-v1.3…rom`, `MCD_eu_100.bin` …) or by checksum, renamed to what the core opens and routed to its system; arcade BIOS zips are checked for both arcade cores. One click installs everything usable.
+- **Neo Geo on MAME 2003-Plus from any current `neogeo.zip`.** MAME 2003-Plus needs the MAME 0.78 file names that no romset or pack carries today. The app now converts a current-MAME / FBNeo `neogeo.zip` offline (`sm1.sm1 → mame.sm1`, `sfix.sfix → sfix.sfx`, `000-lo.lo → mamelo.lo`, region ROMs renamed) — automatically on import, or via **Convert and install** in the MAME BIOS manager. Verified: Metal Slug 3 boots and plays on the converted set.
+- MAME's *WRONG CHECKSUMS* warning on `mame.sm1` / `sfix.sfx` (every post-0.78 dump; the core plays anyway) no longer marks a working `neogeo.zip` as *not the right version* and no longer raises a false alarm during play.
+- **Where do BIOS files come from?** card in the BIOS manager and the Missing BIOS check — the RetroBIOS address as text; the app still never opens a network connection (checked by the test-suite).
+
 ## 🆕 What's new in 2.2.3
 
 - **Neo Geo games: the BIOS set is now a one-step install, not a confusing "missing files" list.** A complete `mslug3.zip` (or any Neo Geo / PGM set) without its `neogeo.zip` is reported as *ONE MORE FILE: NEOGEO.ZIP* — informational, the game is fine — with **Add the game and install `neogeo.zip` now** as the first choice. Until the BIOS is there the card says **NEEDS BIOS**, the library's BIOS chip reads *BIOS NEEDED · n games*, and pressing Play asks to install it instead of dropping into the emulator menu.

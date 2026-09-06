@@ -55,6 +55,13 @@ Your games, BIOS, save states and settings are stored locally too — nothing ev
 
 ## 🆕 What's new
 
+### 2.2.4 — BIOS files: verified against RetroBIOS, imported in one drop, Neo Geo converted for MAME 2003-Plus
+- **Every BIOS file is checksum-verified when you pick it** — offline, against a table built from the [RetroBIOS](https://abdess.github.io/retrobios/) catalogue (`www/data/bios-db.json`, 21 names / 47 known-good dumps). The BIOS manager row reads **verified ✓**; a wrong file is named for what it really is (*THIS IS NOT SCPH5502.BIN — its checksum is the one of scph5501.bin → Install it as scph5501.bin instead*); an unknown revision is flagged *unknown checksum — may work* instead of silently accepted. [Details ↓](#-bios-files--where-they-come-from-and-how-the-app-checks-them)
+- **One-drop BIOS import.** Drop a whole RetroBIOS pack, a RetroArch `system/` or Recalbox `bios/` folder — or any handful of files — anywhere on the window (or **BIOS → Import a BIOS folder / pack…**): each file is recognised by name, by RetroBIOS' own name (`GBA_bios.rom`, `SAT_1.00-(U+E).bin`, `Kickstart-v1.3…rom`, `MCD_eu_100.bin` …) or by checksum, renamed to what the core opens and routed to its system; arcade BIOS zips go to both arcade cores after the romset check. One click installs everything usable, the rest is listed as ignored.
+- **Neo Geo on MAME 2003-Plus without hunting for a 2003 romset.** Current-MAME / FBNeo `neogeo.zip` files (the only kind any pack ships today) are converted on the spot — `sm1.sm1 → mame.sm1`, `sfix.sfix → sfix.sfx`, the zoom table `000-lo.lo → mamelo.lo`, region ROMs renamed — and the result boots the games (verified with Metal Slug 3). The import does it automatically; the BIOS manager offers **Convert and install** when such a zip is picked.
+- MAME's *WRONG CHECKSUMS* on `mame.sm1` / `sfix.sfx` (every post-0.78 dump) is now treated as what it is — a warning the core ignores — so a working `neogeo.zip` is no longer reported as *not the right version*, and no false alarm is shown during play.
+- **Where do BIOS files come from?** card (BIOS manager, Missing BIOS check) pointing at RetroBIOS, shown as text — the app still never opens a network connection.
+
 ### 2.2.3 — Neo Geo / BIOS sets: verified, explained, installable in one step
 - A complete Neo Geo game without `neogeo.zip` is now reported as **ONE MORE FILE: NEOGEO.ZIP** (blue, informational — the game is fine) with **Add the game and install `neogeo.zip` now** as the first choice; the card carries a **NEEDS BIOS** badge and the library's BIOS chip reads *BIOS NEEDED · n games* until the BIOS set is installed. Launching such a game asks to install the BIOS instead of dropping into the emulator menu.
 - The **BIOS manager verifies arcade BIOS zips** when you pick them: a current-MAME / FBNeo `neogeo.zip` offered to MAME 2003-Plus (or vice-versa) is refused with the reason and the version that *is* needed; a minimal set (system ROM + support ROMs) is accepted; the row shows what was found (*4/4 system files · 14/14 optional BIOS versions*).
@@ -169,7 +176,7 @@ Default game keys: **Arrows** = D-pad · **Z** = B/1 · **X** = A/2 · **A** = Y
 | MAME 2003 Plus | mame2003_plus | `neogeo.zip` (MAME 0.78 version) for Neo Geo games |
 | MS-DOS (DOSBox Pure) | dosbox_pure | — |
 
-Bold = required. Install BIOS files from the **BIOS** button in a system's game view, or run **Settings → Missing BIOS check**.
+Bold = required. Install BIOS files from the **BIOS** button in a system's game view, drop a whole BIOS folder on the window, or run **Settings → Missing BIOS check**. Every file is checksum-verified offline — see [BIOS files](#-bios-files--where-they-come-from-and-how-the-app-checks-them).
 
 ## 🎁 Bundled free games — try every system out of the box
 
@@ -258,12 +265,60 @@ Recalbox OS Web therefore **checks every arcade zip when you add it** against th
 Games that pass are added under their proper title (year and manufacturer in *Game info*); problems get a
 **WON'T RUN / INCOMPLETE** badge, and if a launch still fails the player shows the reason instead of the menu.
 
+## 💾 BIOS files — where they come from and how the app checks them
+
+![One-drop BIOS import](www/img/bios-import.png)
+
+Some systems need the console's own firmware (PlayStation, Sega CD, Saturn, Lynx, Amiga; optional for GBA, DS, 5200,
+7800, PC Engine CD, Famicom Disk System) and the arcade cores need *BIOS sets* (`neogeo.zip`, `pgm.zip` …). The app
+does not ship or download any of them — you bring the files, it makes sure they are the right ones:
+
+- **Verified against RetroBIOS.** [RetroBIOS](https://abdess.github.io/retrobios/) ([Abdess/retrobios](https://github.com/Abdess/retrobios))
+  is an open, source-verified BIOS catalogue with ready-made packs for RetroArch, Recalbox, RomM, Batocera … Only its
+  *metadata* is used here: `scripts/build-bios-db.js` turns its `database.json` + install manifests into
+  `www/data/bios-db.json` (21 BIOS names, 47 known-good dumps, 31 aliases, 22 KB). Picking a file computes its CRC32
+  locally and compares — **verified ✓**, *unknown checksum — may work*, or *THIS IS NOT …* with the real identity of
+  the file and a one-click "install it under its real name" fix.
+- **One-drop import.** Drop the unpacked RetroBIOS **RetroArch pack** (flat `system/` folder — same names as this app),
+  the **Recalbox pack** (`bios/` folder), or any batch of files anywhere on the window, or use **BIOS → Import a BIOS
+  folder / pack…**. Files are recognised by name, by RetroBIOS' own names (`GBA_bios.rom` → `gba_bios.bin`,
+  `SAT_1.00-(U+E).bin` → `mpr-17933.bin`, `Kickstart-v1.3-rev34.5…rom` → `kick34005.A500`, `MCD_eu_100.bin` →
+  `bios_CD_E.bin`, `Atari_LYNX_boot.img` → `lynxboot.img` …) or by checksum alone, and routed to the right system.
+  Arcade BIOS zips are checked against both arcade cores' romset lists. One click installs everything usable.
+- **Neo Geo for MAME 2003-Plus.** MAME 2003-Plus opens the MAME 0.78 file names (`sp-s2.sp1`, `mame.sm1`, `mamelo.lo`,
+  `sfix.sfx`) that no current romset or pack carries any more — the data did not change, only the names. A
+  current-MAME / FBNeo `neogeo.zip` is therefore **converted offline** (`sm1.sm1 → mame.sm1`, `sfix.sfix → sfix.sfx`,
+  first 64 KB of `000-lo.lo → mamelo.lo`, `sp-s3.sp1 → asia-s3.rom`, `sp-u2.sp1 → usa_2slt.bin`, `neodebug.bin →
+  neodebug.rom`; originals kept) — automatically by the import, or via **Convert and install** in the MAME BIOS manager.
+  The two support ROMs are newer dumps than the 0.78 list, so MAME logs a *WRONG CHECKSUMS* warning and plays anyway;
+  the app shows *4/4 system files (⚠ mame.sm1, sfix.sfx newer dump)* and does not raise a false alarm.
+
+  ![Neo Geo BIOS conversion for MAME 2003-Plus](www/img/neogeo-convert.png)
+
+| Name the app lists | System | Known-good CRC32 (RetroBIOS) | Also recognised as |
+|---|---|---|---|
+| `scph5501.bin` · `scph5500.bin` · `scph5502.bin` · `scph1001.bin` | PlayStation | `8d8cb7e4` · `ff3eeb8c` · `d786f0b9` · `37157331` (+ `55847d8c`, `aff00f2f`) | `scph1001_v20/v21.bin` |
+| `bios_CD_U.bin` · `bios_CD_E.bin` · `bios_CD_J.bin` | Sega CD | `c6d10268` · `529ac15a` · `9d2da8f2` (+ later revisions) | `us_scd2_9306.bin`, `MCD_eu_100.bin`, `MCD_jp_100p.bin`, `eu_mcd2_*.bin`, `jp_mcd*.bin` |
+| `saturn_bios.bin` · `sega_101.bin` · `mpr-17933.bin` | Saturn | `2aba43c2` · `224b752c` · `4afcf0fa` | `sega_100.bin`, `SAT_1.01-(J).bin`, `SAT_1.00-(U+E).bin`, `sega_100a.bin`, `sega1003.bin` |
+| `lynxboot.img` | Lynx | `0d973c9d` | `Atari_LYNX_boot.img` |
+| `kick34005.A500` · `kick40068.A1200` | Amiga | `c4f0f55f` · `1483a091` | `Kickstart-v1.3-rev34.5-…rom`, `amiga-os-310-a1200.rom` |
+| `gba_bios.bin` | GBA | `81977335` | `GBA_bios.rom` |
+| `bios7.bin` · `bios9.bin` · `firmware.bin` | DS | `1280f0d5` · `2ab23573` · `945f9dc9` (+ DS Lite / alt.) | `NDS_Bios7.bin`, `NDS_Bios9.bin`, `NDS_Lite_Firmware.bin`, `dsfirmware.bin` |
+| `5200.rom` · `7800 BIOS (U).rom` | Atari 5200 / 7800 | `4248d3e3` · `5d13730c` | — |
+| `syscard3.pce` | PC Engine CD | `6d9a73ef` (+ `64f78e3c` headered, `2b5b75fe` US) | `syscard3u.pce` |
+| `disksys.rom` | Famicom Disk System | `5e607dcf` (+ `1c7ae5d5`) | `fdsbios.nes` |
+| `neogeo.zip` · `pgm.zip` (+ 24 other arcade BIOS sets) | Arcade / MAME | verified per file against the cores' romset lists | converted for MAME 2003-Plus when needed |
+
+BIOS files are copyrighted by their manufacturers; RetroBIOS distributes them for personal backup / interoperability.
+This app only stores what you give it, on your machine, and never opens a network connection — the *Where do BIOS
+files come from?* card shows the RetroBIOS address as text.
+
 ## ⚠️ Important note about game ROMs
 
 The app provides the **emulator engines** (open source, GPL) and the free library above. It does **not** include
 copyrighted commercial games. You add your own ROMs in the app (**ADD GAMES** or drag-and-drop);
 they are stored inside the app's local database, never uploaded anywhere.
-A few systems (PS1, Sega CD, Saturn, Lynx, Amiga…) require **BIOS files** that you supply yourself.
+A few systems (PS1, Sega CD, Saturn, Lynx, Amiga…) require **BIOS files** that you supply yourself — see [BIOS files](#-bios-files--where-they-come-from-and-how-the-app-checks-them).
 
 ## 🛠️ Run locally (development)
 
@@ -319,12 +374,14 @@ www/                    the app (frontend + EmulatorJS data)
   img/                  logo.svg / banner.svg / icon-256.png + screenshots for this README
   data/                 EmulatorJS 4.2.3 runtime (stable release)
   data/arcade/          MAME 2003-Plus + FBNeo romset databases (name → files/CRCs/BIOS) for the add-time check
+  data/bios-db.json     BIOS checksum table (from the RetroBIOS catalogue, metadata only) — verification, aliases, routing
   data/cores/           bundled emulator cores + manifest.json (from `npm run cores`, not in git)
   roms/                 bundled free library: games + library.json (attributes) + LICENSES.md (credits)
 build/                  icon-master.png (1024² source) → make-icons.py → icon.png / icon.ico / icon.icns / icons/*.png
 scripts/download-cores.js   bundles/verifies the emulator cores (pinned to the runtime version)
 scripts/download-roms.js    fetches/verifies the mamedev.org arcade games (distribution restricted to that site)
 scripts/build-arcade-db.js  regenerates www/data/arcade/*.json from the cores' DAT files (run when cores are upgraded)
+scripts/build-bios-db.js    regenerates www/data/bios-db.json from the RetroBIOS catalogue (metadata only; run when it changes)
 .github/workflows/build.yml  GitHub Actions cloud build
 ```
 
