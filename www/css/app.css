@@ -328,3 +328,13 @@ body[data-view="boot"] footer{display:none}
 .ginfo .irow b{font-weight:normal;color:var(--text);word-break:break-word}
 .ginfo .irow b i{color:var(--muted);font-style:normal}
 .ginfo .src{font-family:monospace;font-size:12px;color:var(--muted)}
+
+/* ---- arcade romset check (add-time verdict + card badge + info rows) ---- */
+.verdict{font-family:var(--body);font-size:13px;line-height:1.6;color:var(--text);padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);margin-bottom:6px}
+.verdict.bad{border-color:rgba(255,106,106,.55);box-shadow:inset 3px 0 0 var(--red)}
+.verdict.warn{border-color:rgba(255,179,71,.55);box-shadow:inset 3px 0 0 var(--accent)}
+.verdict p{margin:8px 0 0}
+.verdict .hint{color:var(--muted);font-size:12px}
+.game .demo.rs.bad{background:var(--red);color:#1a0505}
+.game .demo.rs.warn{background:var(--accent);color:#1a1000}
+.ginfo .irow b .bad{color:var(--red)} .ginfo .irow b .warn{color:var(--accent)}

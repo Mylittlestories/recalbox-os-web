@@ -471,7 +471,7 @@
       el.setAttribute("data-idx",idx);
       el.style.setProperty("--c",gs.color);
       var art = SHOTS[game.id] ? '<img class="shot" src="'+SHOTS[game.id]+'" alt="">' : '<div class="ph">'+gs.icon+'</div>';
-      el.innerHTML='<div class="box">'+art+(game.fav?'<span class="favmark">'+ICON.heart+'</span>':'')+(game.embedded?'<span class="demo">FREE</span>':'')+'</div>'+
+      el.innerHTML='<div class="box">'+art+(game.fav?'<span class="favmark">'+ICON.heart+'</span>':'')+(game.embedded?'<span class="demo">FREE</span>':'')+(game.meta&&game.meta.romsetStatus&&game.meta.romsetStatus!=="ok"?'<span class="demo rs '+game.meta.romsetStatus+'" title="romset check: '+esc(game.meta.romsetNote||"")+'">'+(game.meta.romsetStatus==="bad"?"WON'T RUN":"INCOMPLETE")+'</span>':'')+'</div>'+
         '<div class="meta"><div class="t" title="'+esc(game.name)+'">'+esc(game.name)+'</div><div class="s"><span class="sys" style="--c:'+gs.color+'">'+esc(gs.short)+'</span>'+(game.lastPlayed?'<span>'+fmtAgo(game.lastPlayed)+'</span>':'<span>'+fmtBytes(game.size)+'</span>')+(game.meta&&game.meta.genre?'<span class="genre">'+esc(game.meta.genre)+'</span>':'')+'</div></div>';
       el.addEventListener("click",function(){ focusGame(idx,false,true); blip("select"); startGame(game); });
       el.addEventListener("contextmenu",function(ev){ ev.preventDefault(); focusGame(idx,false,true); openGameMenu(game); });
@@ -546,7 +546,7 @@
   function addFiles(files,forcedSys){
     var sys=forcedSys||findSys(currentSys);
     if(sys&&sys.collection) sys=null;
-    var added=0, skipped=[], needChoice=[], jobs=[], addedTo=[];
+    var added=0, skipped=[], needChoice=[], jobs=[], addedTo=[], arcadeQueue=[];
     // group multi-file CD games (cue + bin(s)) : when a .cue is present with same-base .bin files, pack them as one game
     var byBase={}; files.forEach(function(f){ var b=f.name.replace(/\.[^.]+$/,"").replace(/\s*\((track|disc)[^)]*\)/i,"").toLowerCase(); (byBase[b]=byBase[b]||[]).push(f); });
     files.forEach(function(f){
@@ -569,10 +569,22 @@
         var base2=f.name.replace(/\.[^.]+$/,"").toLowerCase();
         extra=files.filter(function(o){ var ob=o.name.replace(/\.[^.]+$/,"").replace(/\s*\((track|disc)[^)]*\)/i,"").toLowerCase(); return o!==f && (ob===base2 || ob.indexOf(base2)===0) && /\.(bin|img|iso|wav|ape|cue|chd)$/i.test(o.name); });
       }
+      if(target.arcade && (ext==="zip"||ext==="7z")){ arcadeQueue.push({file:f,sys:target}); return; }
       jobs.push(saveRom(f,target,extra));
       added++; addedTo.push(target.id);
     });
-    Promise.all(jobs).then(function(){
+    var runArcadeQueue=function(){
+      if(!arcadeQueue.length) return Promise.resolve();
+      var it=arcadeQueue.shift();
+      return checkArcadeRom(it.sys,it.file).then(function(v){
+        return new Promise(function(done){
+          var accept=function(file,vv){ jobs.push(saveRom(file,it.sys,[],vv||v)); added++; addedTo.push(it.sys.id); done(); };
+          if(v.ok && v.level==="ok"){ accept(it.file,v); return; }
+          arcadeVerdictModal(it.sys,it.file,v,accept,function(){ skipped.push(it.file.name); done(); });
+        });
+      }).then(runArcadeQueue);
+    };
+    runArcadeQueue().then(function(){ return Promise.all(jobs); }).then(function(){
       if(added){
         var targets=addedTo.filter(function(v,i,a){return a.indexOf(v)===i;});
         if(view==="library" && targets.length===1 && targets[0]!==currentSys && !(findSys(currentSys)||{}).collection){ openLibrary(targets[0]); }
@@ -585,8 +597,96 @@
       renderSystems();
     });
   }
-  function saveRom(file,sys,extraFiles){
+  /* ================= arcade romset check =================
+     Arcade cores (MAME 2003-Plus, FinalBurn Neo) do not load "a ROM": the zip's FILE NAME is the romset
+     name (circus.zip → driver "circus") and the core opens the files INSIDE it by name/CRC for that exact
+     emulator version. When anything is off the core silently drops into the RetroArch menu. So the zip is
+     checked against the core's own database (www/data/arcade/*.json, from the cores' DAT files) when it
+     is added, and the verdict is shown instead of the menu. */
+  var ARCADE_DB={};            // core -> {sets:{name:[desc,year,manufacturer,parent,bios,[files]]}, bios:[...]}
+  function arcadeDbFor(sys){
+    var id = sys.core==="mame" ? "mame2003plus" : sys.core==="arcade" ? "fbneo" : null;
+    if(!id) return Promise.resolve(null);
+    if(ARCADE_DB[id]) return Promise.resolve(ARCADE_DB[id]);
+    return fetch("data/arcade/"+id+".json").then(function(r){ return r.ok?r.json():null; }).then(function(j){ ARCADE_DB[id]=j; return j; }).catch(function(){ return null; });
+  }
+  /* file names inside a zip (central directory), without inflating anything */
+  function zipEntries(blob){
+    var tail=Math.min(blob.size,66*1024);
+    return blob.slice(blob.size-tail).arrayBuffer().then(function(ab){
+      var u=new Uint8Array(ab), dv=new DataView(ab), eocd=-1;
+      for(var i=u.length-22;i>=0;i--){ if(u[i]===0x50&&u[i+1]===0x4b&&u[i+2]===0x05&&u[i+3]===0x06){ eocd=i; break; } }
+      if(eocd<0) throw new Error("not a zip");
+      var count=dv.getUint16(eocd+10,true), cdSize=dv.getUint32(eocd+12,true), cdOff=dv.getUint32(eocd+16,true);
+      return blob.slice(cdOff,cdOff+cdSize).arrayBuffer().then(function(cd){
+        var c=new Uint8Array(cd), d=new DataView(cd), p=0, names=[], td=new TextDecoder();
+        for(var n=0;n<count&&p+46<=c.length;n++){
+          if(d.getUint32(p,true)!==0x02014b50) break;
+          var nl=d.getUint16(p+28,true), el=d.getUint16(p+30,true), cl=d.getUint16(p+32,true);
+          names.push({name:td.decode(c.subarray(p+46,p+46+nl)),crc:("00000000"+d.getUint32(p+16,true).toString(16)).slice(-8)}); p+=46+nl+el+cl;
+        }
+        return names;
+      });
+    });
+  }
+  /* -> {ok, level:"ok"|"warn"|"bad", set, title, msg, needsBios, missing[]} */
+  function checkArcadeRom(sys,file){
+    var name=file.name.replace(/\.[^.]+$/,""), ext=extOf(file.name);
+    return arcadeDbFor(sys).then(function(db){
+      if(!db) return {ok:true,level:"ok",set:name};
+      var coreName = sys.core==="mame" ? "MAME 2003-Plus (MAME 0.78 romsets)" : "FinalBurn Neo (v1.0.0.03 romsets)";
+      var key=name.toLowerCase(), entry=db.sets[key];
+      if(ext==="7z") return {ok:false,level:"bad",set:name,head:"7Z ARCHIVES ARE NOT SUPPORTED BY THE ARCADE CORES",msg:"The core must read the romset itself and only understands .zip. Re-pack it as <b>"+esc(key)+".zip</b> (store or deflate)."};
+      if(!entry){
+        // is it a known set under a different case / with tags?
+        var stripped=key.replace(/\s*[\(\[].*$/,"").trim();
+        var hint=db.sets[stripped]?stripped:null;
+        if(!hint){ var cands=Object.keys(db.sets).filter(function(k){ var t=db.sets[k][0].toLowerCase(); return t===key||t.replace(/[^a-z0-9]/g,"")===key.replace(/[^a-z0-9]/g,""); }); if(cands.length===1) hint=cands[0]; }
+        var he=hint?db.sets[hint]:null;
+        return {ok:false,level:"bad",set:name,hint:hint,hintTitle:he?he[0]:"",hintYear:he?he[1]:"",hintMaker:he?he[2]:"",hintBios:he&&he[4]?he[4]+".zip":"",head:'"'+esc(name)+'" IS NOT A ROMSET NAME '+coreName.split(" (")[0].toUpperCase()+' KNOWS',
+          msg:"Arcade emulators find the game by the zip's file name (e.g. <b>sf2.zip</b>, <b>pacman.zip</b>), not by its contents. "+
+              (hint?'This looks like <b>'+esc(hint)+'</b> ('+esc(db.sets[hint][0])+') — rename the file to <b>'+esc(hint)+'.zip</b>.':'Rename the zip to the short MAME name of the game and add it again.')};
+      }
+      var title=entry[0], parent=entry[3], bios=entry[4], want=entry[5];
+      return zipEntries(file).then(function(entries){
+        var byName={}, byCrc={};
+        entries.forEach(function(e){ byName[e.name.split("/").pop().toLowerCase()]=e.crc; byCrc[e.crc]=1; });
+        var missing=[], wrong=[];
+        want.forEach(function(w){
+          var nm=w.split(":")[0], crc=w.split(":")[1]||"";
+          var haveCrc=byName[nm.toLowerCase()];
+          if(haveCrc===undefined){ if(crc && byCrc[crc]) return; missing.push(nm); }   // same data under another file name → fine
+          else if(crc && haveCrc!==crc && crc!=="00000000") wrong.push(nm);
+        });
+        var names=want.map(function(w){ return w.split(":")[0]; });
+        var needParent = parent && missing.length && !entries.some(function(e){ return /\.zip$/i.test(e.name); });
+        var r={ok:true,level:"ok",set:key,title:title,year:entry[1],maker:entry[2],parent:parent,bios:bios,missing:missing,wrong:wrong,files:entries.length};
+        var bad=missing.length+wrong.length;
+        if(want.length && bad===want.length){ r.ok=false; r.level="bad"; r.head="THE FILES INSIDE DO NOT MATCH THIS ROMSET"; r.msg="<b>"+esc(key)+".zip</b> should contain <b>"+esc(names.slice(0,3).join(", "))+(names.length>3?" … ("+names.length+" files)":"")+"</b>"+(wrong.length?" with the checksums of the "+(sys.core==="mame"?"MAME 0.78":"FBNeo 1.0.0.03")+" set — "+(wrong.length===want.length?"every file":wrong.length+" files")+" differ. This dump is from another MAME version.":" but none of them is there. This dump is from another MAME version — "+coreName+" needs the matching set."); }
+        else if(bad){ r.level="warn"; r.head=bad+" OF "+want.length+" FILES ARE "+(missing.length&&wrong.length?"MISSING OR WRONG":missing.length?"MISSING":"FROM ANOTHER VERSION"); r.msg=(missing.length?"Missing: <b>"+esc(missing.slice(0,6).join(", "))+(missing.length>6?" …":"")+"</b>. ":"")+(wrong.length?"Wrong checksum: <b>"+esc(wrong.slice(0,6).join(", "))+(wrong.length>6?" …":"")+"</b>. ":"")+(needParent?"<b>"+esc(key)+"</b> is a clone of <b>"+esc(parent)+"</b> — with a split set you also need <b>"+esc(parent)+".zip</b> in this library.":"The game may still boot, but expect glitches or a refusal to start."); }
+        if(bios){ r.needsBios=bios+".zip"; }
+        return r;
+      }).catch(function(){ return {ok:true,level:"ok",set:key,title:title}; });
+    });
+  }
+  function arcadeVerdictModal(sys,file,v,onAdd,onSkip){
+    var items=[];
+    if(v.hint) items.push({label:"Add as "+v.hint+".zip",sub:(v.hintTitle?v.hintTitle+" — ":"")+"renamed inside the library, the original file is untouched",icon:ICON.check,color:"#7ed957",action:function(){ closeModal(); var nf=new File([file],v.hint+".zip",{type:file.type}); checkArcadeRom(sys,nf).then(function(v2){ if(v2.ok&&v2.level==="ok") onAdd(nf,v2); else arcadeVerdictModal(sys,nf,v2,onAdd,onSkip); }); }});
+    var addAnyway=function(){ closeModal(); onAdd(file,v); };
+    items.push({label:v.ok?"Add anyway":"Add anyway (it will not run)",icon:ICON.play,color:v.ok?"#ffb347":"#ff6a6a",action:addAnyway});
+    items.push({label:"Skip this file",icon:ICON.close,action:function(){ closeModal(); onSkip(); }});
+    openModal({title:v.head||"ROMSET CHECK",sub:esc(file.name)+" · "+esc(sys.name)+(v.title?" · "+esc(v.title):""),
+      html:'<div class="verdict '+v.level+'">'+(v.msg||"")+(v.needsBios?'<p>This game also needs the BIOS set <b>'+esc(v.needsBios)+'</b> — install it from the <b>BIOS</b> button of this library.</p>':'')+
+           '<p class="hint">Tip: arcade zips must keep their original short name and come from a romset built for <b>'+(sys.core==="mame"?"MAME 0.78 / MAME 2003-Plus":"FinalBurn Neo 1.0.0.03")+'</b>. Newer MAME sets are split differently and fail with checksum errors.</p></div>',
+      items:items,onClose:onSkip});
+  }
+
+  function saveRom(file,sys,extraFiles,verdict){
     var rec={id:uid(),sysId:sys.id,name:cleanName(file.name),fileName:file.name,size:file.size,added:Date.now(),lastPlayed:0,playCount:0,playTime:0,fav:false,blob:file};
+    if(verdict&&verdict.set){   // arcade: proper title from the core database + romset status for the card/info dialog
+      if(verdict.title) rec.name=verdict.title.replace(/\s*\((?!.*\bset\b).*$/,"").trim()||verdict.title;
+      rec.meta={year:verdict.year||undefined,author:verdict.maker||undefined,romset:verdict.set,romsetStatus:verdict.level,romsetNote:(verdict.head||verdict.title||""),missing:(verdict.missing||[]).concat(verdict.wrong||[]),needsBios:verdict.needsBios||"",parent:verdict.parent||""};
+    }
     if(extraFiles&&extraFiles.length){ rec.extra=extraFiles.map(function(f){return {name:f.name,blob:f};}); rec.size+=extraFiles.reduce(function(a,f){return a+f.size;},0); }
     ROMS.push(rec);
     return DB.put("roms",rec).catch(function(e){ console.warn("store rom failed",e); toast("&#9888; COULD NOT STORE FILE (STORAGE FULL?) — IT WILL WORK UNTIL RESTART"); });
@@ -728,7 +828,9 @@
       row("SYSTEM",esc(gs.name)+' <i>('+esc(coreLabel(gs))+' core)</i>')+row("AUTHOR",esc(m.author))+row("YEAR",m.year)+row("GENRE",esc(m.genre))+row("PLAYERS",m.players)+
       row("LICENSE",esc(m.license))+row("FILE",esc(game.fileName)+' · '+fmtBytes(game.size)+(game.extra&&game.extra.length?' (+'+game.extra.length+' track file'+(game.extra.length>1?'s':'')+')':''))+
       row("ADDED",game.embedded?'bundled with the app':fmtAgo(game.added))+row("STATS",'played '+(game.playCount||0)+'× · '+fmtDur(game.playTime)+' · last '+fmtAgo(game.lastPlayed))+
-      (m.source?row("SOURCE",'<span class="src">'+esc(m.source)+'</span>'):'')+'</div>';
+      (m.source?row("SOURCE",'<span class="src">'+esc(m.source)+'</span>'):'')+
+      (m.romset?row("ROMSET",esc(m.romset)+'.zip'+(m.parent?' · clone of '+esc(m.parent):'')+(m.needsBios?' · needs '+esc(m.needsBios):'')):'')+
+      (m.romsetStatus&&m.romsetStatus!=="ok"?row("CHECK",'<span class="'+m.romsetStatus+'">'+esc(m.romsetNote||m.romsetStatus)+(m.missing&&m.missing.length?' — missing: '+esc(m.missing.slice(0,8).join(", "))+(m.missing.length>8?" …":""):"")+'</span>'):'')+'</div>';
     openModal({title:game.name.toUpperCase(),sub:game.embedded?"Free game bundled with Recalbox OS Web — see LICENSE for the terms of its author.":"Game in your library",html:html,items:[
       {label:"Play",icon:ICON.play,color:"#7ed957",action:function(){ closeModal(); startGame(game); }},
       {label:game.fav?"Remove from favorites":"Add to favorites",icon:ICON.heart,color:"#ff5a7a",action:function(){ game.fav=!game.fav; persistRom(game); closeModal(); renderIfLibrary(); renderSystems(); }},
@@ -774,7 +876,7 @@
       {label:"Export library list",sub:"Download a JSON with your game list & stats",icon:ICON.file,action:function(){ var data=ROMS.map(function(r){return {name:r.name,file:r.fileName,system:r.sysId,fav:r.fav,playCount:r.playCount,playTime:r.playTime,lastPlayed:r.lastPlayed};}); var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download="recalbox-web-library.json"; a.click(); }},
       {label:"Reset all settings",icon:ICON.reset,color:"#ff6a6a",action:function(){ settings=Object.assign({},DEFAULTS); saveSettings(); applyTheme(); rebuild(); toast("SETTINGS RESET"); }},
       {label:"Help & shortcuts",icon:ICON.keyboard,action:function(){ closeModal(); showHelp(); }},
-      {label:"About",sub:"Recalbox OS Web 2.2.0 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.2</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>Ships with a free library of homebrew, open-source and freeware games for every system (see roms/LICENSES.md for the authors and their terms) — no commercial ROMs. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
+      {label:"About",sub:"Recalbox OS Web 2.2.1 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.2</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>Ships with a free library of homebrew, open-source and freeware games for every system (see roms/LICENSES.md for the authors and their terms) — no commercial ROMs. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
     ]});
   }
   /* ================= emulator cores (bundled, offline) ================= */
@@ -853,7 +955,7 @@
       showControls(sys,true); modalOnClose=function(){ startGame(game); };
       return;
     }
-    current=game; playStart=Date.now(); quitting=false; lastShot=null;
+    current=game; playStart=Date.now(); quitting=false; lastShot=null; arcadeFailNotified=false;
     installHotkeys();
     byId("plTitle").innerHTML=esc(game.name)+' <b>&middot; '+esc(sys.short)+'</b>';
     var ffHint=$("#plFF"); if(ffHint) ffHint.textContent = sys.kind==="computer" ? "F10" : "SPACE";
@@ -928,6 +1030,7 @@
       };
       var lang=langFor();
       var start=function(){
+        window.EJS_DEBUG_XX=!!sys.arcade;   // arcade: expose the core log so romset failures can be explained (see watchCoreLog)
         window.EJS_emulator=new window.EmulatorJS("#ejsHost",config);
         var em=window.EJS_emulator;
         // EmulatorJS 4.2.3 quirk: when localStorage is available but this game has no saved
@@ -939,7 +1042,7 @@
           em.getCoreSettings=function(){ var out=gcs()||""; Object.keys(sys.coreOptions).forEach(function(k){ if(out.indexOf(k+" ")===-1) out+=k+' = "'+sys.coreOptions[k]+'"\n'; }); return out; };
         }
         installPadHotkeys(em);
-        em.on("ready",function(){ setLoad("STARTING…"); });
+        em.on("ready",function(){ setLoad("STARTING…"); }); if(sys.arcade) watchCoreLog();
         em.on("start",onGameStart);
         em.on("saveState",function(e){ saveStateToDB(e.state,e.screenshot||e.blob); });
         em.on("loadState",function(){ loadStateFromDB(); });
@@ -977,11 +1080,43 @@
     setLoad(msg);
     byId("plLoadingTip").innerHTML="Possible causes: missing BIOS · wrong system for this file · unsupported ROM format · core needs WebGL2/threads.<br>Everything runs locally — no download is attempted. Press <b>ESC</b> to go back.";
   }
+  /* Arcade cores never fail "loudly": when the romset is wrong RetroArch shows its own menu instead of the
+     game. Recognise that from the core's log lines and replace it with an explanation + the fix. */
+  var coreLog=[], coreLogTap=null;
+  function watchCoreLog(){
+    coreLog=[];
+    if(coreLogTap) return;
+    // EmulatorJS forwards the core's stdout/stderr to console.log only when its debug flag is on
+    // (window.EJS_DEBUG_XX, read when the instance is created) — so arcade launches run in debug mode
+    // and this tap reads the libretro log lines.
+    var orig=console.log.bind(console);
+    coreLogTap=function(){ try{ var t=arguments[0]; if(typeof t==="string"&&t.charAt(0)==="["){ if(coreLog.length<400) coreLog.push(t); if(/Failed to load content|Game driver not found|Required files are missing|is required$|None of those archives|WRONG CHECKSUMS|readroms failed/.test(t)) arcadeFailed(t); } }catch(e){} return orig.apply(console,arguments); };
+    console.log=coreLogTap;
+  }
+  var arcadeFailNotified=false;
+  function arcadeFailed(line){
+    if(arcadeFailNotified||!current) return; arcadeFailNotified=true;
+    var sys=findSys(current.sysId), m=current.meta||{}, set=(current.fileName||"").replace(/\.[^.]+$/,"");
+    var why = /Game driver not found/.test(line) ? '"'+esc(set)+'" is not a romset name this core knows — arcade zips must keep their short MAME name (sf2.zip, pacman.zip …).'
+            : /is required/.test(line) ? 'A required file is missing: '+esc(line.replace(/.*with name /,"").replace(/ and CRC.*/,""))+(m.needsBios?' — install the BIOS set <b>'+esc(m.needsBios)+'</b> from the BIOS button.':' (BIOS or parent set missing, or a different romset version).')
+            : /WRONG CHECKSUMS/.test(line) ? 'The files inside the zip are from another MAME version (checksums differ). '+(sys.core==="mame"?"MAME 2003-Plus needs MAME 0.78 romsets.":"FinalBurn Neo needs its 1.0.0.03 romsets.")
+            : /Required files are missing|None of those archives|readroms failed/.test(line) ? 'Files the core needs are not inside the zip'+(m.missing&&m.missing.length?': <b>'+esc(m.missing.slice(0,6).join(", "))+'</b>':'')+'. Wrong romset version, or a clone without its parent set.'
+            : 'The core could not load this romset.';
+    var show=function(){
+      if(!current||!arcadeFailNotified) return;
+      var ld=byId("plLoading"); ld.style.display="flex"; ld.classList.add("err"); ld.classList.remove("done"); clearTimeout(watchdog);
+      setLoad("THIS ROMSET CANNOT RUN ON "+(sys.short||"THIS CORE"));
+      byId("plLoadingTip").innerHTML=why+'<br><small>What you see behind this message is the emulator\'s own menu, not the game. Press <b>ESC</b> to go back, fix the file and add it again — the library checks arcade zips when they are added.</small>';
+      byId("plHud").classList.remove("show");
+    };
+    show(); setTimeout(show,400); setTimeout(show,1500);   // re-assert after EmulatorJS' "start" hides the panel
+  }
   function onGameStart(){
     started=true; clearTimeout(watchdog);
     document.body.classList.toggle("smooth",!!settings.smooth);
     var ld=byId("plLoading");
-    ld.classList.add("done"); setTimeout(function(){ ld.style.display="none"; ld.classList.remove("done"); },350);
+    if(arcadeFailNotified){ installHotkeys(); return; }   // romset failure overlay stays (see arcadeFailed)
+    ld.classList.add("done"); setTimeout(function(){ if(!arcadeFailNotified){ ld.style.display="none"; ld.classList.remove("done"); } },350);
     installHotkeys();
     // Apply "Auto load state" (RetroBat auto save/load)
     if(settings.autoLoadState){ setTimeout(function(){ loadStateFromDB(true,"auto"); },400); }
@@ -1070,7 +1205,7 @@
   function setFF(on){ try{ emu().gameManager.simulateInput(0,27,on?1:0); if(on) showHud(ICON.ff+" FAST-FORWARD",700); }catch(e){} }
   function confirmQuit(){
     if(ccOpen)return;
-    if(!started){ abortLoad(); return; }
+    if(!started || arcadeFailNotified){ abortLoad(); return; }   // nothing to save when the romset never loaded → leave directly
     openControlCenter(true);
   }
   function abortLoad(){ if(quitting)return; quitting=true; try{ if(window.EJS_emulator) window.EJS_emulator.callEvent("exit"); }catch(e){} setTimeout(teardownPlayer,60); }
@@ -1463,7 +1598,7 @@
   }
 
   window.addEventListener("unhandledrejection",function(ev){ var m=String((ev.reason&&ev.reason.message)||ev.reason||""); if(/Wake Lock|wakeLock/i.test(m)) ev.preventDefault(); });
-  window.RBW={version:"2.2.0",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,
+  window.RBW={version:"2.2.1",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,
     roms:function(){ return ROMS; }, systems:function(){ return SYSTEMS; },
     play:function(id){ var g=ROMS.find(function(r){return r.id===id;}); if(g){ if(view!=="library"||currentSys!==g.sysId) openLibrary(g.sysId); startGame(g); } return !!g; },
     open:function(sysId){ openLibrary(sysId); }, home:function(){ showSystems(); },

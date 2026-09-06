@@ -24,11 +24,11 @@
 
 | Platform | File | Type |
 |----------|------|------|
-| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.0-win-x64-setup.exe` | One-click installer |
-| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.0-win-x64-portable.exe` | Portable (no install) |
-| 🐧 Linux | `RecalboxOSWeb-2.2.0-linux-x86_64.AppImage` | AppImage (`chmod +x`, run) |
-| 🍎 macOS (Apple Silicon) | `RecalboxOSWeb-2.2.0-mac-arm64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
-| 🍎 macOS (Intel) | `RecalboxOSWeb-2.2.0-mac-x64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
+| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.1-win-x64-setup.exe` | One-click installer |
+| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.1-win-x64-portable.exe` | Portable (no install) |
+| 🐧 Linux | `RecalboxOSWeb-2.2.1-linux-x86_64.AppImage` | AppImage (`chmod +x`, run) |
+| 🍎 macOS (Apple Silicon) | `RecalboxOSWeb-2.2.1-mac-arm64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
+| 🍎 macOS (Intel) | `RecalboxOSWeb-2.2.1-mac-x64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
 
 <div align="center">
 
@@ -54,6 +54,10 @@ Your games, BIOS, save states and settings are stored locally too — nothing ev
 ![Core details](www/img/core-info.png)
 
 ## 🆕 What's new
+
+### 2.2.1 — arcade romset check
+- Adding a MAME / FBNeo zip now **validates the romset** (name, files, CRCs, BIOS/parent) against the cores' databases and explains problems with a fix — instead of the core silently opening the RetroArch menu. Unknown names get an **Add as `<romset>.zip`** offer; recognised games get their real title, year and manufacturer. [Details ↓](#-arcade-games-mame--finalburn-neo--why-the-zip-name-matters)
+- If an arcade launch still fails, the player shows *why* (checksums / missing BIOS / unknown driver) and `ESC` leaves directly.
 
 ### 2.2.0 — free game library, new identity
 - **38 legally free games for 20 systems are bundled** (NES, SNES, N64, GB, GBA, Mega Drive, SMS, GG, 2600, Lynx, Jaguar, PC Engine, WonderSwan, NGP, PSX, PSP, Saturn, Arcade/FBNeo, MAME, DOS) — homebrew, open-source and freeware titles plus the mamedev.org arcade classics. Every one was verified running on its bundled core, offline. [Details & credits ↓](#-bundled-free-games--try-every-system-out-of-the-box)
@@ -218,6 +222,32 @@ The **MAME / FBNeo arcade titles** (Exidy, Bally/Midway, Videa, Video Games GmbH
 (`scripts/download-roms.js`) fetches and checksums them at build time, exactly like the emulator cores, and the GitHub build
 does the same. If a file is missing the game is simply not listed.
 
+## 🕹️ Arcade games (MAME / FinalBurn Neo) — why the zip name matters
+
+Arcade emulators do not load "a ROM file": the zip **is the romset** and its **file name is the game's short
+name** (`sf2.zip`, `pacman.zip`, `circus.zip`). Inside, the core opens the original board chips by name and
+checksum — for the *exact* emulator version:
+
+| Core | Romset version it needs | Notes |
+|---|---|---|
+| **MAME 2003-Plus** (`MAME` system) | **MAME 0.78** romsets (mame2003-plus set) | 5 275 games. Newer MAME sets are split differently → checksum errors |
+| **FinalBurn Neo** (`Arcade` system) | **FBNeo 1.0.0.03** romsets | 8 366 games, incl. CPS / Neo Geo (needs `neogeo.zip` as BIOS) |
+
+If the name is not a known romset, the content is from another version, or a BIOS/parent set is missing, a
+libretro arcade core does not show an error — it silently drops into **RetroArch's own menu** (*Main Menu /
+Load Content / Settings*). That is what "it just shows a MAME menu" means.
+
+Recalbox OS Web therefore **checks every arcade zip when you add it** against the cores' own databases
+(`www/data/arcade/*.json`, generated from the cores' DAT files by `scripts/build-arcade-db.js`):
+
+- 🔤 **unknown name** — e.g. `Circus (Exidy 1977).zip`: it tells you the matching short name and offers **Add as `circus.zip`** (renamed inside the library, the original file is untouched);
+- 🧩 **files from another MAME version** — compares names *and* CRCs from the zip directory: "the files inside do not match this romset";
+- 🪫 **BIOS / parent missing** — e.g. `mslug.zip` needs `neogeo.zip` (install it from the library's **BIOS** button); clones of a split set need the parent zip in the same library;
+- 📦 **`.7z`** — the arcade cores cannot read it; re-pack as `.zip`.
+
+Games that pass are added under their proper title (year and manufacturer in *Game info*); problems get a
+**WON'T RUN / INCOMPLETE** badge, and if a launch still fails the player shows the reason instead of the menu.
+
 ## ⚠️ Important note about game ROMs
 
 The app provides the **emulator engines** (open source, GPL) and the free library above. It does **not** include
@@ -278,11 +308,13 @@ www/                    the app (frontend + EmulatorJS data)
   css/                  theme + font
   img/                  logo.svg / banner.svg / icon-256.png + screenshots for this README
   data/                 EmulatorJS 4.2.3 runtime (stable release)
+  data/arcade/          MAME 2003-Plus + FBNeo romset databases (name → files/CRCs/BIOS) for the add-time check
   data/cores/           bundled emulator cores + manifest.json (from `npm run cores`, not in git)
   roms/                 bundled free library: games + library.json (attributes) + LICENSES.md (credits)
 build/                  icon-master.png (1024² source) → make-icons.py → icon.png / icon.ico / icon.icns / icons/*.png
 scripts/download-cores.js   bundles/verifies the emulator cores (pinned to the runtime version)
 scripts/download-roms.js    fetches/verifies the mamedev.org arcade games (distribution restricted to that site)
+scripts/build-arcade-db.js  regenerates www/data/arcade/*.json from the cores' DAT files (run when cores are upgraded)
 .github/workflows/build.yml  GitHub Actions cloud build
 ```
 

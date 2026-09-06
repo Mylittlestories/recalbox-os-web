@@ -14,6 +14,12 @@ Windows SmartScreen / macOS Gatekeeper warn because the installers are not code-
 
 Nothing else to install: the installers contain all 25 emulator cores (~92 MB) and the free game library.
 
+## 🆕 What's new in 2.2.1
+
+- **Arcade romset check.** Adding a MAME / FinalBurn Neo zip now validates it against the core's own database (romset name, files, CRC32s, BIOS/parent) and explains any problem with the fix — e.g. *"Circus (Exidy 1977).zip" is not a romset name MAME 2003-Plus knows → Add as `circus.zip`*, *files are from another MAME version*, *needs `neogeo.zip`*, *.7z not supported*. Before, a wrong zip silently opened RetroArch's own menu instead of the game.
+- Recognised arcade games are added under their real title with year and manufacturer; problem files get a **WON'T RUN / INCOMPLETE** badge; a failing arcade launch shows the reason and `ESC` leaves directly.
+- README: a guide to arcade romsets (which versions the two cores need and why the file name matters).
+
 ## 🆕 What's new in 2.2
 
 - **38 legally free games for 20 systems are bundled** — NES, SNES, N64, Game Boy, GBA, Mega Drive, Master System, Game Gear, Atari 2600, Lynx, Jaguar, PC Engine, WonderSwan, Neo Geo Pocket, PlayStation, PSP, Saturn, Arcade (FBNeo), MAME and DOS. Homebrew, open-source and freeware titles plus the mamedev.org arcade classics (Gridlee, Robby Roto, Super Tank, Circus, Car Polo, Side Trak, Rip Cord, Fire One!, Star Fire, Targ, Spectar); each one verified running on its bundled core, offline. Credits and licences: `www/roms/LICENSES.md`.
