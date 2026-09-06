@@ -24,11 +24,11 @@
 
 | Platform | File | Type |
 |----------|------|------|
-| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.1-win-x64-setup.exe` | One-click installer |
-| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.1-win-x64-portable.exe` | Portable (no install) |
-| 🐧 Linux | `RecalboxOSWeb-2.2.1-linux-x86_64.AppImage` | AppImage (`chmod +x`, run) |
-| 🍎 macOS (Apple Silicon) | `RecalboxOSWeb-2.2.1-mac-arm64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
-| 🍎 macOS (Intel) | `RecalboxOSWeb-2.2.1-mac-x64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
+| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.2-win-x64-setup.exe` | One-click installer |
+| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.2-win-x64-portable.exe` | Portable (no install) |
+| 🐧 Linux | `RecalboxOSWeb-2.2.2-linux-x86_64.AppImage` | AppImage (`chmod +x`, run) |
+| 🍎 macOS (Apple Silicon) | `RecalboxOSWeb-2.2.2-mac-arm64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
+| 🍎 macOS (Intel) | `RecalboxOSWeb-2.2.2-mac-x64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
 
 <div align="center">
 
@@ -54,6 +54,9 @@ Your games, BIOS, save states and settings are stored locally too — nothing ev
 ![Core details](www/img/core-info.png)
 
 ## 🆕 What's new
+
+### 2.2.2 — arcade check: BIOS & parent sets
+- Files that belong to a **BIOS set** (`neogeo.zip`, `pgm.zip` …) or to a **parent** game are no longer reported as "missing" from a split game zip. The check now verifies them where they live — the BIOS zip installed through the BIOS manager and the parent zip in the library — and reports *needs `neogeo.zip`*, *installed `neogeo.zip` does not match this set* or *clone of `puckman` — parent set needed*, with an **Add and install `neogeo.zip` now** shortcut.
 
 ### 2.2.1 — arcade romset check
 - Adding a MAME / FBNeo zip now **validates the romset** (name, files, CRCs, BIOS/parent) against the cores' databases and explains problems with a fix — instead of the core silently opening the RetroArch menu. Unknown names get an **Add as `<romset>.zip`** offer; recognised games get their real title, year and manufacturer. [Details ↓](#-arcade-games-mame--finalburn-neo--why-the-zip-name-matters)
@@ -242,7 +245,7 @@ Recalbox OS Web therefore **checks every arcade zip when you add it** against th
 
 - 🔤 **unknown name** — e.g. `Circus (Exidy 1977).zip`: it tells you the matching short name and offers **Add as `circus.zip`** (renamed inside the library, the original file is untouched);
 - 🧩 **files from another MAME version** — compares names *and* CRCs from the zip directory: "the files inside do not match this romset";
-- 🪫 **BIOS / parent missing** — e.g. `mslug.zip` needs `neogeo.zip` (install it from the library's **BIOS** button); clones of a split set need the parent zip in the same library;
+- 🪫 **BIOS / parent set** — Neo Geo, PGM, … games and clones of *split* sets keep part of their files in another zip (`neogeo.zip`, `pgm.zip`, the parent game). Those files are **not** expected inside the game zip: the check looks for them in the BIOS set installed via the library's **BIOS** button (and in the parent zip in the same library) and tells you exactly which one to install — including when an installed BIOS zip is from the wrong version;
 - 📦 **`.7z`** — the arcade cores cannot read it; re-pack as `.zip`.
 
 Games that pass are added under their proper title (year and manufacturer in *Game info*); problems get a

@@ -14,6 +14,10 @@ Windows SmartScreen / macOS Gatekeeper warn because the installers are not code-
 
 Nothing else to install: the installers contain all 25 emulator cores (~92 MB) and the free game library.
 
+## 🆕 What's new in 2.2.2
+
+- **Arcade check — BIOS & parent sets.** Files that live in a BIOS set (`neogeo.zip`, `pgm.zip` …) or in a clone's parent game are no longer flagged as "missing" from the game zip. They are verified in the BIOS zip installed via the BIOS manager / the parent zip in the library, with precise verdicts: *needs `neogeo.zip`* (+ **Add and install now** shortcut), *installed `neogeo.zip` does not match this set*, *clone of `puckman` — parent set needed*.
+
 ## 🆕 What's new in 2.2.1
 
 - **Arcade romset check.** Adding a MAME / FinalBurn Neo zip now validates it against the core's own database (romset name, files, CRC32s, BIOS/parent) and explains any problem with the fix — e.g. *"Circus (Exidy 1977).zip" is not a romset name MAME 2003-Plus knows → Add as `circus.zip`*, *files are from another MAME version*, *needs `neogeo.zip`*, *.7z not supported*. Before, a wrong zip silently opened RetroArch's own menu instead of the game.

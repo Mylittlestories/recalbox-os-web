@@ -8,7 +8,9 @@
  *   MAME 2003-Plus : https://raw.githubusercontent.com/libretro/mame2003-plus-libretro/master/metadata/mame2003-plus.xml
  *   FinalBurn Neo  : https://raw.githubusercontent.com/libretro/FBNeo/master/dats/FinalBurn Neo (ClrMame Pro XML, Arcade only).dat
  *
- * Output format (compact):  { "<romset>": [description, year, manufacturer, parent, bios, ["file:crc32"…]] }
+ * Output format (compact):  { "<romset>": [description, year, manufacturer, parent, bios, ["file:crc32"…], ["inherited file:crc32"…]] }
+ *   files      = what must be inside <romset>.zip itself
+ *   inherited  = files that live in the BIOS set / parent set (merge="…" in the DAT) — checked there, not here
  * File names + CRC32 are what the core opens/verifies; the app compares them with the zip's central directory
  * (names and stored CRCs) without inflating anything, so a wrong-version dump is caught before launch.
  *
@@ -42,15 +44,18 @@ function parse(xml) {
     const name = attr(open, 'name');
     if (bios.has(name)) continue;
     const romof = attr(open, 'romof'), cloneof = attr(open, 'cloneof');
-    const files = [];
+    const files = [], inherited = [];
     for (const r of b.matchAll(/<rom\s([^>]*)\/?>/g)) {
       const t = ' ' + r[1];
       if (attr(t, 'status') === 'nodump') continue;
-      const merge = attr(t, 'merge');
-      if (merge && cloneof) continue;                 // lives in the parent set (split/merged sets) — parent handled separately
-      files.push(attr(t, 'name') + ':' + attr(t, 'crc').toLowerCase());
+      const entry = attr(t, 'name') + ':' + attr(t, 'crc').toLowerCase();
+      // merge="…" = the file lives in the set named by romof (the BIOS set — neogeo/pgm/… — or the parent of a
+      // clone). Such files are NOT expected inside this zip (split sets); they are checked against the BIOS/parent
+      // zip instead. A merged set that carries them anyway is fine too.
+      if (attr(t, 'merge') || attr(t, 'bios')) { inherited.push(entry); continue; }
+      files.push(entry);
     }
-    db[name] = [text(b, 'description') || name, text(b, 'year'), text(b, 'manufacturer'), cloneof, bios.has(romof) ? romof : '', files];
+    db[name] = [text(b, 'description') || name, text(b, 'year'), text(b, 'manufacturer'), cloneof, bios.has(romof) ? romof : '', files, inherited];
   }
   return { db, bios: [...bios].sort() };
 }
