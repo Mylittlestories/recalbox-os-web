@@ -24,11 +24,11 @@
 
 | Platform | File | Type |
 |----------|------|------|
-| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.2-win-x64-setup.exe` | One-click installer |
-| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.2-win-x64-portable.exe` | Portable (no install) |
-| 🐧 Linux | `RecalboxOSWeb-2.2.2-linux-x86_64.AppImage` | AppImage (`chmod +x`, run) |
-| 🍎 macOS (Apple Silicon) | `RecalboxOSWeb-2.2.2-mac-arm64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
-| 🍎 macOS (Intel) | `RecalboxOSWeb-2.2.2-mac-x64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
+| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.3-win-x64-setup.exe` | One-click installer |
+| 🪟 Windows 10/11 | `RecalboxOSWeb-2.2.3-win-x64-portable.exe` | Portable (no install) |
+| 🐧 Linux | `RecalboxOSWeb-2.2.3-linux-x86_64.AppImage` | AppImage (`chmod +x`, run) |
+| 🍎 macOS (Apple Silicon) | `RecalboxOSWeb-2.2.3-mac-arm64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
+| 🍎 macOS (Intel) | `RecalboxOSWeb-2.2.3-mac-x64.dmg` | Disk image — unsigned, allow it in *Privacy & Security* |
 
 <div align="center">
 
@@ -54,6 +54,12 @@ Your games, BIOS, save states and settings are stored locally too — nothing ev
 ![Core details](www/img/core-info.png)
 
 ## 🆕 What's new
+
+### 2.2.3 — Neo Geo / BIOS sets: verified, explained, installable in one step
+- A complete Neo Geo game without `neogeo.zip` is now reported as **ONE MORE FILE: NEOGEO.ZIP** (blue, informational — the game is fine) with **Add the game and install `neogeo.zip` now** as the first choice; the card carries a **NEEDS BIOS** badge and the library's BIOS chip reads *BIOS NEEDED · n games* until the BIOS set is installed. Launching such a game asks to install the BIOS instead of dropping into the emulator menu.
+- The **BIOS manager verifies arcade BIOS zips** when you pick them: a current-MAME / FBNeo `neogeo.zip` offered to MAME 2003-Plus (or vice-versa) is refused with the reason and the version that *is* needed; a minimal set (system ROM + support ROMs) is accepted; the row shows what was found (*4/4 system files · 14/14 optional BIOS versions*).
+- Only the BIOS set's **required** files count (default system ROM, `sm1`, `sfix`, zoom table) — the alternate region / Universe BIOS ROMs are optional, as in the cores themselves. Clones inherit the BIOS of their parent (`garoup`, `kof98k` …) and are checked for both parent and BIOS.
+- Player: MAME's *WRONG CHECKSUMS* lines are warnings, not failures — a game that boots on a wrong-version BIOS now runs with a toast naming the bad zip; a dump from another MAME version is still stopped with the explanation.
 
 ### 2.2.2 — arcade check: BIOS & parent sets
 - Files that belong to a **BIOS set** (`neogeo.zip`, `pgm.zip` …) or to a **parent** game are no longer reported as "missing" from a split game zip. The check now verifies them where they live — the BIOS zip installed through the BIOS manager and the parent zip in the library — and reports *needs `neogeo.zip`*, *installed `neogeo.zip` does not match this set* or *clone of `puckman` — parent set needed*, with an **Add and install `neogeo.zip` now** shortcut.
@@ -159,8 +165,8 @@ Default game keys: **Arrows** = D-pad · **Z** = B/1 · **X** = A/2 · **A** = Y
 | Neo Geo Pocket / Color | mednafen_ngp | — |
 | Commodore 64 | vice_x64sc | — |
 | Commodore Amiga | puae | **`kick34005.A500`** (Kickstart) |
-| Arcade (FBNeo) | fbneo | `neogeo.zip` for Neo Geo games |
-| MAME 2003 Plus | mame2003_plus | `neogeo.zip` for Neo Geo games |
+| Arcade (FBNeo) | fbneo | `neogeo.zip` (FBNeo version) for Neo Geo games, `pgm.zip` for PGM |
+| MAME 2003 Plus | mame2003_plus | `neogeo.zip` (MAME 0.78 version) for Neo Geo games |
 | MS-DOS (DOSBox Pure) | dosbox_pure | — |
 
 Bold = required. Install BIOS files from the **BIOS** button in a system's game view, or run **Settings → Missing BIOS check**.
@@ -245,7 +251,8 @@ Recalbox OS Web therefore **checks every arcade zip when you add it** against th
 
 - 🔤 **unknown name** — e.g. `Circus (Exidy 1977).zip`: it tells you the matching short name and offers **Add as `circus.zip`** (renamed inside the library, the original file is untouched);
 - 🧩 **files from another MAME version** — compares names *and* CRCs from the zip directory: "the files inside do not match this romset";
-- 🪫 **BIOS / parent set** — Neo Geo, PGM, … games and clones of *split* sets keep part of their files in another zip (`neogeo.zip`, `pgm.zip`, the parent game). Those files are **not** expected inside the game zip: the check looks for them in the BIOS set installed via the library's **BIOS** button (and in the parent zip in the same library) and tells you exactly which one to install — including when an installed BIOS zip is from the wrong version;
+- 🪫 **BIOS / parent set** — Neo Geo, PGM, … games and clones of *split* sets keep part of their files in another zip (`neogeo.zip`, `pgm.zip`, the parent game). Those files are **not** expected inside the game zip: the check looks for them in the BIOS set installed via the library's **BIOS** button (and in the parent zip in the same library). A complete game that only lacks its BIOS set gets *ONE MORE FILE: NEOGEO.ZIP* with a one-step **add + install** path, a **NEEDS BIOS** badge until then, and a reminder at launch;
+- 🧾 **BIOS zips are verified too** — the BIOS manager compares a picked `neogeo.zip` / `pgm.zip` with the core's list: MAME 2003-Plus wants the MAME 0.78 files (`sp-s2.sp1`, `mame.sm1`, `mamelo.lo`, `sfix.sfx`), FinalBurn Neo the current ones (`sp-s3.sp1`, `sm1.sm1`, `sfix.sfix`, `000-lo.lo`) — the wrong one is refused with the reason. Alternate region / Universe BIOS ROMs are optional;
 - 📦 **`.7z`** — the arcade cores cannot read it; re-pack as `.zip`.
 
 Games that pass are added under their proper title (year and manufacturer in *Game info*); problems get a

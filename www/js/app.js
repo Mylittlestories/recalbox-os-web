@@ -392,7 +392,7 @@
     var el=$('#sysGrid .card[data-idx="'+i+'"]');
     if(el&&scroll!==false) el.scrollIntoView({block:"nearest",behavior:"smooth"});
     var s=sysList[i];
-    byId("sysInfo").innerHTML = s.collection ? '<b>'+esc(s.name.toUpperCase())+'</b>' : '<b>'+esc(s.name.toUpperCase())+'</b> · '+esc(s.maker||"")+' · '+(s.year||"")+' · core: <i>'+esc(coreLabel(s))+'</i>'+(coreInstalled(s)?'':' <span class="warn">NOT BUNDLED</span>')+(s.bios?' · <span class="'+(biosStatus(s).missingReq?'warn':'ok')+'">BIOS '+(biosStatus(s).missingReq?'MISSING':'OK')+'</span>':'');
+    byId("sysInfo").innerHTML = s.collection ? '<b>'+esc(s.name.toUpperCase())+'</b>' : '<b>'+esc(s.name.toUpperCase())+'</b> · '+esc(s.maker||"")+' · '+(s.year||"")+' · core: <i>'+esc(coreLabel(s))+'</i>'+(coreInstalled(s)?'':' <span class="warn">NOT BUNDLED</span>')+(s.bios?' · <span class="'+(biosStatus(s).missingReq||biosStatus(s).waiting?'warn':'ok')+'">BIOS '+(biosStatus(s).missingReq?'MISSING':biosStatus(s).waiting?'NEEDED':'OK')+'</span>':'');
   }
   function coreLabel(s){ var map={nes:"fceumm",snes:"snes9x",n64:"mupen64plus-next",gb:"gambatte",gba:"mgba",nds:"melonds",psx:"pcsx-rearmed",psp:"ppsspp",segaMD:"genesis-plus-gx",segaMS:"smsplus",segaGG:"genesis-plus-gx",segaCD:"genesis-plus-gx",segaSaturn:"yabause",atari2600:"stella2014",atari5200:"a5200",atari7800:"prosystem",lynx:"handy",jaguar:"virtualjaguar",pce:"mednafen-pce",ws:"mednafen-wswan",ngp:"mednafen-ngp",c64:"vice-x64sc",amiga:"puae",arcade:"fbneo",mame:"mame2003-plus",dos:"dosbox-pure"}; return map[s.id]||s.core; }
   function gridColumns(gridEl){
@@ -444,7 +444,7 @@
       hb.style.display="";
       var cs=coreStatus(sys);
       hb.innerHTML='<button class="chip '+(cs.ok?'':'warn')+'" id="coreBtn" title="Emulator core details">'+ICON.gear+' CORE '+esc(coreLabel(sys))+(cs.ok?'':' · MISSING')+'</button>'+
-        (sys.bios?'<button class="chip '+(bs.missingReq?'warn':'ok')+'" id="biosBtn">'+ICON.chip+' BIOS '+(bs.missingReq?'MISSING':(bs.have+'/'+sys.bios.length))+'</button>':'')+
+        (sys.bios?'<button class="chip '+(bs.missingReq||bs.waiting?'warn':'ok')+'" id="biosBtn" title="'+(bs.waiting?bs.waiting+' game'+(bs.waiting>1?'s':'')+' waiting for a BIOS set':'BIOS files of this system')+'">'+ICON.chip+' BIOS '+(bs.missingReq?'MISSING':bs.waiting?'NEEDED · '+bs.waiting+' GAME'+(bs.waiting>1?'S':''):(bs.have+'/'+sys.bios.length))+'</button>':'')+
         '<button class="chip" id="ctlBtn">'+ICON.keyboard+' CONTROLS</button>'+
         '<span class="exts">'+esc(sys.exts.map(function(e){return "."+e;}).join(" "))+'</span>';
       var bb=byId("biosBtn"); if(bb) bb.addEventListener("click",function(){ openBios(sys); });
@@ -471,7 +471,7 @@
       el.setAttribute("data-idx",idx);
       el.style.setProperty("--c",gs.color);
       var art = SHOTS[game.id] ? '<img class="shot" src="'+SHOTS[game.id]+'" alt="">' : '<div class="ph">'+gs.icon+'</div>';
-      el.innerHTML='<div class="box">'+art+(game.fav?'<span class="favmark">'+ICON.heart+'</span>':'')+(game.embedded?'<span class="demo">FREE</span>':'')+(game.meta&&game.meta.romsetStatus&&game.meta.romsetStatus!=="ok"?'<span class="demo rs '+game.meta.romsetStatus+'" title="romset check: '+esc(game.meta.romsetNote||"")+'">'+(game.meta.romsetStatus==="bad"?"WON'T RUN":"INCOMPLETE")+'</span>':'')+'</div>'+
+      el.innerHTML='<div class="box">'+art+(game.fav?'<span class="favmark">'+ICON.heart+'</span>':'')+(game.embedded?'<span class="demo">FREE</span>':'')+(function(){ var rs=romsetBadge(game,gs); return rs?'<span class="demo rs '+rs.cls+'" title="'+esc(rs.title)+'">'+rs.text+'</span>':''; })()+'</div>'+
         '<div class="meta"><div class="t" title="'+esc(game.name)+'">'+esc(game.name)+'</div><div class="s"><span class="sys" style="--c:'+gs.color+'">'+esc(gs.short)+'</span>'+(game.lastPlayed?'<span>'+fmtAgo(game.lastPlayed)+'</span>':'<span>'+fmtBytes(game.size)+'</span>')+(game.meta&&game.meta.genre?'<span class="genre">'+esc(game.meta.genre)+'</span>':'')+'</div></div>';
       el.addEventListener("click",function(){ focusGame(idx,false,true); blip("select"); startGame(game); });
       el.addEventListener("contextmenu",function(ev){ ev.preventDefault(); focusGame(idx,false,true); openGameMenu(game); });
@@ -595,6 +595,7 @@
       else if(skipped.length) toast("&#9888; FILE TYPE NOT ACCEPTED HERE: <b>"+esc(skipped[0])+"</b>",4000);
       if(needChoice.length) askSystemFor(needChoice);
       renderSystems();
+      if(afterAddOpenBios){ var ob=afterAddOpenBios; afterAddOpenBios=null; setTimeout(function(){ openBios(ob.sys,ob.name); },350); }
     });
   }
   /* ================= arcade romset check =================
@@ -603,7 +604,8 @@
      emulator version. When anything is off the core silently drops into the RetroArch menu. So the zip is
      checked against the core's own database (www/data/arcade/*.json, from the cores' DAT files) when it
      is added, and the verdict is shown instead of the menu. */
-  var ARCADE_DB={};            // core -> {sets:{name:[desc,year,manufacturer,parent,bios,[files]]}, bios:[...]}
+  var ARCADE_DB={};            // core -> {sets:{name:[desc,year,manufacturer,parent,bios,[files],[inherited]]}, bios:[...], biosSets:{name:[desc,[required],[optional]]}}
+  var afterAddOpenBios=null;   // {sys,name} → open the BIOS manager on that row when the current add-batch is finished
   function arcadeDbFor(sys){
     var id = sys.core==="mame" ? "mame2003plus" : sys.core==="arcade" ? "fbneo" : null;
     if(!id) return Promise.resolve(null);
@@ -648,6 +650,7 @@
               (hint?'This looks like <b>'+esc(hint)+'</b> ('+esc(db.sets[hint][0])+') — rename the file to <b>'+esc(hint)+'.zip</b>.':'Rename the zip to the short MAME name of the game and add it again.')};
       }
       var title=entry[0], parent=entry[3], bios=entry[4], want=entry[5], inherited=entry[6]||[];
+      var biosDef = bios && db.biosSets ? db.biosSets[bios] : null;                    // [desc, required[], optional[]] of the BIOS set
       var biosRec = bios ? BIOS[sys.id+"/"+bios+".zip"] : null;                      // installed via the BIOS manager?
       var parentRec = parent ? ROMS.filter(function(r){ return r.sysId===sys.id && (r.fileName||"").toLowerCase()===parent+".zip"; })[0] : null;
       var setVer = sys.core==="mame" ? "MAME 0.78 / MAME 2003-Plus" : "FBNeo 1.0.0.03";
@@ -681,59 +684,94 @@
           r.msg=(own.missing.length?"Missing: <b>"+esc(own.missing.slice(0,6).join(", "))+(own.missing.length>6?" …":"")+"</b>. ":"")+(own.wrong.length?"Wrong checksum: <b>"+esc(own.wrong.slice(0,6).join(", "))+(own.wrong.length>6?" …":"")+"</b>. ":"")+"The game may still boot, but expect glitches or a refusal to start.";
         }
         // 2. inherited files: BIOS set and/or parent set (split sets keep them there; merged sets carry them in the zip)
-        if(inherited.length){
-          var inZip=cmp(inherited,entries);
-          if(inZip.missing.length){                                     // not carried in this zip → look where they belong
-            var fromBios = biosEntries ? cmp(inherited,biosEntries) : null;
-            var fromParent = parentEntries ? cmp(inherited,parentEntries) : null;
-            var stillMissing = inZip.missing.filter(function(n){
-              var okB = fromBios && fromBios.missing.indexOf(n)<0 && fromBios.wrong.indexOf(n)<0;
-              var okP = fromParent && fromParent.missing.indexOf(n)<0 && fromParent.wrong.indexOf(n)<0;
-              return !(okB||okP);
-            });
-            if(bios && !biosRec){
-              r.needsBios=bios+".zip"; r.biosState="missing";
-              if(r.level==="ok"){ r.level="warn"; r.head="NEEDS THE "+bios.toUpperCase()+" BIOS SET"; r.msg="The game files are complete. <b>"+esc(key)+"</b> runs on the <b>"+esc(bios)+"</b> system board, whose files ("+esc(inZip.missing.slice(0,3).join(", "))+" …) live in <b>"+esc(bios)+".zip</b>."; }
-            } else if(bios && biosRec && stillMissing.length){
-              r.needsBios=bios+".zip"; r.biosState="incomplete";
-              if(r.level==="ok"){ r.level="warn"; r.head="INSTALLED "+bios.toUpperCase()+".ZIP DOES NOT MATCH THIS SET"; r.msg="Your <b>"+esc(bios)+".zip</b> lacks <b>"+esc(stillMissing.slice(0,4).join(", "))+(stillMissing.length>4?" …":"")+"</b> (or they have other checksums) — it must be the "+setVer+" version of the BIOS set."; }
-            } else if(parent && !parentRec && stillMissing.length){
-              r.needsParent=parent+".zip";
-              if(r.level==="ok"){ r.level="warn"; r.head="CLONE OF "+parent.toUpperCase()+" — PARENT SET NEEDED"; r.msg="<b>"+esc(key)+"</b> is a clone: <b>"+esc(stillMissing.slice(0,4).join(", "))+(stillMissing.length>4?" …":"")+"</b> come from <b>"+esc(parent)+".zip</b>. Add that zip to this library too (split set), or use a merged set."; }
-            } else if(parent && parentRec && stillMissing.length){
-              r.needsParent=parent+".zip";
-              if(r.level==="ok"){ r.level="warn"; r.head="PARENT SET "+parent.toUpperCase()+".ZIP DOES NOT MATCH"; r.msg="The <b>"+esc(parent)+".zip</b> in this library lacks <b>"+esc(stillMissing.slice(0,4).join(", "))+"</b> needed by this clone."; }
-            }
-            if(bios && biosRec && !stillMissing.length) r.notes.push("BIOS "+bios+".zip installed ✓");
-            if(parent && parentRec && !stillMissing.length) r.notes.push("parent "+parent+".zip present ✓");
+        //    Two independent questions: (a) BIOS set files → judged by the BIOS set's own required list (the default system
+        //    ROM + support ROMs; alternate region / Universe BIOS ROMs are optional extras); (b) parent-set files → must be
+        //    in this zip (merged set) or in the parent zip of this library (split set).
+        var biosNames={}; if(biosDef){ biosDef[1].concat(biosDef[2]).forEach(function(w){ biosNames[w.split(":")[0].toLowerCase()]=1; }); }
+        var isBiosFile=function(n){ return !!biosNames[n.toLowerCase()]; };
+        var fromParentList = inherited.filter(function(w){ return !isBiosFile(w.split(":")[0]); });       // parent-set files
+        // (a) BIOS set
+        if(bios){
+          r.biosDesc=biosDef?biosDef[0]:bios;
+          if(!biosRec){
+            r.needsBios=bios+".zip"; r.biosState="missing";
+          } else if(biosDef && biosEntries){
+            var b=cmp(biosDef[1],biosEntries), biosBad=b.missing.concat(b.wrong);
+            if(biosBad.length){ r.needsBios=bios+".zip"; r.biosState="incomplete"; r.biosBad=biosBad; }
+            else r.notes.push("BIOS "+bios+".zip installed ✓");
+          } else if(biosRec) r.notes.push("BIOS "+bios+".zip installed");
+        }
+        // (b) parent set
+        var parentBad=[];
+        if(parent && fromParentList.length){
+          var inZip=cmp(fromParentList,entries);
+          if(inZip.missing.length){                                     // not carried in this zip → must be in the parent zip
+            var fp = parentEntries ? cmp(fromParentList,parentEntries) : null;
+            parentBad = inZip.missing.filter(function(n){ return !(fp && fp.missing.indexOf(n)<0 && fp.wrong.indexOf(n)<0); });
+            if(parentBad.length) r.needsParent=parent+".zip";
+            else r.notes.push("parent "+parent+".zip present ✓");
           }
-        } else if(bios){ if(!biosRec){ r.needsBios=bios+".zip"; r.biosState="missing"; } }
+        }
+        // verdict for a game whose own files are fine (otherwise the own-files verdict above stands)
+        if(r.level==="ok"){
+          if(r.needsParent && !parentRec){
+            r.level="warn"; r.head="CLONE OF "+parent.toUpperCase()+" — PARENT SET NEEDED";
+            r.msg="<b>"+esc(title)+"</b> is a clone of <b>"+esc(parent)+"</b>: <b>"+esc(parentBad.slice(0,4).join(", "))+(parentBad.length>4?" …":"")+"</b> ("+parentBad.length+" files) come from <b>"+esc(parent)+".zip</b>. Add that zip to this library too (split set), or use a merged set."+(r.biosState==="missing"?" It also needs the <b>"+esc(bios)+".zip</b> BIOS set.":"");
+          } else if(r.needsParent){
+            r.level="warn"; r.head="PARENT SET "+parent.toUpperCase()+".ZIP DOES NOT MATCH";
+            r.msg="The <b>"+esc(parent)+".zip</b> in this library lacks <b>"+esc(parentBad.slice(0,4).join(", "))+(parentBad.length>4?" …":"")+"</b> needed by this clone.";
+          } else if(r.biosState==="missing"){
+            r.level="info"; r.head="ONE MORE FILE: "+bios.toUpperCase()+".ZIP";
+            r.msg="<b>"+esc(title)+"</b> is complete and correct &#10003; It runs on the <b>"+esc(r.biosDesc)+"</b> system board, whose own ROMs ("+esc((biosDef?biosDef[1]:inherited).slice(0,3).map(function(w){ return w.split(":")[0]; }).join(", "))+" …) are not part of any game zip — they come in a separate <b>"+esc(bios)+".zip</b> that is installed once and shared by every "+esc(r.biosDesc)+" game.";
+          } else if(r.biosState==="incomplete"){
+            r.level="warn"; r.head="INSTALLED "+bios.toUpperCase()+".ZIP IS NOT THE RIGHT VERSION";
+            r.msg="The game itself is complete, but your installed <b>"+esc(bios)+".zip</b> lacks <b>"+esc(r.biosBad.slice(0,4).join(", "))+(r.biosBad.length>4?" …":"")+"</b> (or they have other checksums). The core needs the "+setVer+" version of it.";
+          }
+        }
         return r;
       }).catch(function(){ return {ok:true,level:"ok",set:key,title:title}; });
     });
   }
   function arcadeVerdictModal(sys,file,v,onAdd,onSkip){
     var items=[];
-    if(v.hint) items.push({label:"Add as "+v.hint+".zip",sub:(v.hintTitle?v.hintTitle+" — ":"")+"renamed inside the library, the original file is untouched",icon:ICON.check,color:"#7ed957",action:function(){ closeModal(); var nf=new File([file],v.hint+".zip",{type:file.type}); checkArcadeRom(sys,nf).then(function(v2){ if(v2.ok&&v2.level==="ok") onAdd(nf,v2); else arcadeVerdictModal(sys,nf,v2,onAdd,onSkip); }); }});
-    var addAnyway=function(){ closeModal(); onAdd(file,v); };
-    if(v.needsBios&&v.biosState==="missing") items.push({label:"Add and install "+v.needsBios+" now",sub:"opens the BIOS manager for this system",icon:ICON.chip,color:"#ffb347",action:function(){ closeModal(); onAdd(file,v); setTimeout(function(){ openBios(sys); },250); }});
-    items.push({label:v.ok?(v.level==="warn"?"Add anyway":"Add"):"Add anyway (it will not run)",icon:ICON.play,color:v.ok?"#ffb347":"#ff6a6a",action:addAnyway});
-    items.push({label:"Skip this file",icon:ICON.close,action:function(){ closeModal(); onSkip(); }});
+    if(v.hint) items.push({label:"Add as "+v.hint+".zip",sub:(v.hintTitle?v.hintTitle+" — ":"")+"renamed inside the library, the original file is untouched",icon:ICON.check,color:"#7ed957",action:function(){ closeModalOnly(); var nf=new File([file],v.hint+".zip",{type:file.type}); checkArcadeRom(sys,nf).then(function(v2){ if(v2.ok&&v2.level==="ok") onAdd(nf,v2); else arcadeVerdictModal(sys,nf,v2,onAdd,onSkip); }); }});
+    var addAnyway=function(){ closeModalOnly(); onAdd(file,v); };
+    var biosMissing = v.needsBios&&v.biosState==="missing", biosWrong = v.needsBios&&v.biosState==="incomplete";
+    var addThenBios=function(){ closeModalOnly(); afterAddOpenBios={sys:sys,name:v.needsBios}; onAdd(file,v); };   // BIOS manager opens once the whole batch is processed
+    var onlyBios = v.level==="info";                                    // game complete, BIOS set is the ONLY thing missing
+    if(biosMissing) items.push({label:"Add the game and install "+v.needsBios+" now",sub:"adds "+(v.title||file.name)+" to the library, then opens the BIOS manager to pick your "+v.needsBios,icon:ICON.chip,color:onlyBios?"#7ed957":"#ffb347",action:addThenBios});
+    if(biosWrong) items.push({label:"Add the game and replace "+v.needsBios,sub:"opens the BIOS manager",icon:ICON.chip,color:"#ffb347",action:addThenBios});
+    items.push({label:!v.ok?"Add anyway (it will not run)":onlyBios?"Add the game, install "+v.needsBios+" later":v.level==="warn"?"Add anyway":"Add",sub:onlyBios?"the game stays marked NEEDS BIOS until "+v.needsBios+" is installed":"",icon:ICON.play,color:!v.ok?"#ff6a6a":v.level==="warn"?"#ffb347":"#7ed957",action:addAnyway});
+    items.push({label:"Skip this file",icon:ICON.close,action:function(){ closeModalOnly(); onSkip(); }});
+    var coreSet = sys.core==="mame"?"MAME 0.78 / MAME 2003-Plus":"FinalBurn Neo 1.0.0.03";
     openModal({title:v.head||"ROMSET CHECK",sub:esc(file.name)+" · "+esc(sys.name)+(v.title?" · "+esc(v.title):""),
       html:'<div class="verdict '+v.level+'">'+(v.msg||"")+
-           (v.needsBios&&v.biosState==="missing"?'<p>Install <b>'+esc(v.needsBios)+'</b> from the <b>BIOS</b> button of this library (top bar) — it is not part of the game zip and is stored once for all games of this system.</p>':'')+
-           (v.needsBios&&v.biosState==="incomplete"?'<p>Replace <b>'+esc(v.needsBios)+'</b> via the <b>BIOS</b> button with the matching version.</p>':'')+
+           (biosMissing?'<p><b>'+(onlyBios?'How to get it playing:':'It also needs the BIOS set:')+'</b> pick <b>'+esc(v.needsBios)+'</b> from a <b>'+coreSet+'</b> romset (the same set your game zip came from). Install it here once — via the button below or the <b>BIOS</b> chip in the top bar of this library — and every '+esc(v.biosDesc||"")+' game will start.</p>':'')+
+           (biosWrong?'<p>Replace <b>'+esc(v.needsBios)+'</b> via the <b>BIOS</b> button with the one from a '+coreSet+' romset.</p>':'')+
            (v.needsParent?'<p>Add <b>'+esc(v.needsParent)+'</b> to this library as well (it is checked like any other game).</p>':'')+
            (v.notes&&v.notes.length?'<p class="hint">'+esc(v.notes.join(" · "))+'</p>':'')+
-           '<p class="hint">Tip: arcade zips must keep their original short name and come from a romset built for <b>'+(sys.core==="mame"?"MAME 0.78 / MAME 2003-Plus":"FinalBurn Neo 1.0.0.03")+'</b>. Newer MAME sets are split differently and fail with checksum errors.</p></div>',
+           (biosMissing?'':'<p class="hint">Tip: arcade zips must keep their original short name and come from a romset built for <b>'+coreSet+'</b>. Newer MAME sets are split differently and fail with checksum errors.</p>')+'</div>',
       items:items,onClose:onSkip});
   }
 
+  /* card badge for arcade zips: what the romset check found, re-evaluated against the BIOS installed NOW
+     (a game added before its BIOS set was installed loses its badge as soon as the BIOS is there) */
+  function romsetBadge(game,sys){
+    var m=game.meta; if(!m||!m.romsetStatus||m.romsetStatus==="ok") return null;
+    var ownBad=(m.missing||[]).length;
+    if(m.needsBios && !ownBad && (m.biosState==="missing"||m.biosState==="incomplete")){
+      if(m.biosState==="missing" && BIOS[(sys||{}).id+"/"+m.needsBios]) return null;          // BIOS installed since → fine
+      if(m.biosState==="missing") return {cls:"info",text:"NEEDS BIOS",title:"needs "+m.needsBios+" — install it from the BIOS button of this library"};
+      return {cls:"warn",text:"CHECK BIOS",title:"the installed "+m.needsBios+" is not the version this core needs — replace it from the BIOS button"};
+    }
+    if(m.romsetStatus==="bad") return {cls:"bad",text:"WON'T RUN",title:"romset check: "+(m.romsetNote||"")};
+    return {cls:"warn",text:"INCOMPLETE",title:"romset check: "+(m.romsetNote||"")};
+  }
   function saveRom(file,sys,extraFiles,verdict){
     var rec={id:uid(),sysId:sys.id,name:cleanName(file.name),fileName:file.name,size:file.size,added:Date.now(),lastPlayed:0,playCount:0,playTime:0,fav:false,blob:file};
     if(verdict&&verdict.set){   // arcade: proper title from the core database + romset status for the card/info dialog
       if(verdict.title) rec.name=verdict.title.replace(/\s*\((?!.*\bset\b).*$/,"").trim()||verdict.title;
-      rec.meta={year:verdict.year||undefined,author:verdict.maker||undefined,romset:verdict.set,romsetStatus:verdict.level,romsetNote:(verdict.head||verdict.title||""),missing:(verdict.missing||[]).concat(verdict.wrong||[]),needsBios:verdict.needsBios||"",biosState:verdict.biosState||"",needsParent:verdict.needsParent||"",parent:verdict.parent||""};
+      rec.meta={year:verdict.year||undefined,author:verdict.maker||undefined,romset:verdict.set,romsetStatus:verdict.level,romsetNote:(verdict.head||verdict.title||""),missing:(verdict.missing||[]).concat(verdict.wrong||[]),needsBios:verdict.needsBios||"",biosState:verdict.biosState||"",biosDesc:verdict.biosDesc||"",needsParent:verdict.needsParent||"",parent:verdict.parent||""};
     }
     if(extraFiles&&extraFiles.length){ rec.extra=extraFiles.map(function(f){return {name:f.name,blob:f};}); rec.size+=extraFiles.reduce(function(a,f){return a+f.size;},0); }
     ROMS.push(rec);
@@ -768,27 +806,86 @@
   function biosStatus(sys){
     var have=0, missingReq=false;
     (sys.bios||[]).forEach(function(b){ if(BIOS[sys.id+"/"+b.name]) have++; else if(b.req) missingReq=true; });
-    return {have:have,missingReq:missingReq};
+    var waiting = sys.arcade ? ROMS.filter(function(r){ return r.sysId===sys.id && r.meta && r.meta.needsBios && !BIOS[sys.id+"/"+r.meta.needsBios]; }).length : 0;
+    return {have:have,missingReq:missingReq,waiting:waiting};
   }
-  function openBios(sys){
-    var items=(sys.bios||[]).map(function(b){
-      var have=BIOS[sys.id+"/"+b.name];
-      return {label:b.name+(have?"":"  —  "+(b.req?"REQUIRED":"optional")), sub:(b.desc||"")+(have?" · "+fmtBytes(have.size)+" · installed":""), icon:have?ICON.check:ICON.file, color:have?"#7ed957":(b.req?"#ff6a6a":"#8b8b9a"),
+  /* BIOS rows of the manager: the system's list + any BIOS set a game in this library is waiting for (decocass.zip,
+     playch10.zip, pgm.zip … are not all pre-listed) + the row the caller asked to focus */
+  function biosRows(sys,focusName){
+    var rows=(sys.bios||[]).slice(), names=rows.map(function(b){ return b.name; });
+    var db=ARCADE_DB[sys.core==="mame"?"mame2003plus":sys.core==="arcade"?"fbneo":""];
+    var addRow=function(n){ if(!n||names.indexOf(n)>=0) return; var def=db&&db.biosSets?db.biosSets[n.replace(/\.zip$/i,"")]:null; rows.push({name:n,req:false,desc:"Required for "+(def?def[0]:n.replace(/\.zip$/i,""))+" games",dyn:true}); names.push(n); };
+    if(sys.arcade) ROMS.forEach(function(r){ if(r.sysId===sys.id && r.meta && r.meta.needsBios) addRow(r.meta.needsBios); });
+    addRow(focusName);
+    return rows;
+  }
+  function openBios(sys,focusName){
+    var waiting = sys.arcade ? ROMS.filter(function(r){ return r.sysId===sys.id && r.meta && r.meta.needsBios && !BIOS[sys.id+"/"+r.meta.needsBios]; }) : [];
+    var rows=biosRows(sys,focusName);
+    var items=rows.map(function(b){
+      var have=BIOS[sys.id+"/"+b.name], need=waiting.filter(function(r){ return r.meta.needsBios===b.name; });
+      var sub=(b.desc||"")+(have?" · "+fmtBytes(have.size)+" · installed"+(have.check?" · "+have.check:""):"");
+      if(!have && need.length) sub+=" · waiting for it: "+need.slice(0,3).map(function(r){ return r.name; }).join(", ")+(need.length>3?" +"+(need.length-3):"");
+      return {label:b.name+(have?"":"  —  "+(need.length?"NEEDED BY "+need.length+" GAME"+(need.length>1?"S":""):b.req?"REQUIRED":"optional")), sub:sub, icon:have?ICON.check:ICON.file, color:have?"#7ed957":(b.req||need.length?"#ff6a6a":"#8b8b9a"),
         action:function(){ pickBios(sys,b.name); }, secondary: have?{label:"REMOVE",action:function(){ DB.del("bios",sys.id+"/"+b.name).then(function(){ delete BIOS[sys.id+"/"+b.name]; openBios(sys); openLibrary(sys.id,true); }); }}:null };
     });
     items.push({label:"Add any other BIOS file…",sub:"For files not listed above (name is kept as-is)",icon:ICON.file,action:function(){ pickBios(sys,null); }});
-    openModal({title:"BIOS · "+sys.name.toUpperCase(),sub:"BIOS files are stored inside the app and mounted for the emulator at start. Names must match exactly.",items:items});
+    openModal({title:"BIOS · "+sys.name.toUpperCase(),sub:"BIOS files are stored inside the app and mounted for the emulator at start. Names must match exactly."+(sys.arcade?" Arcade BIOS zips are verified against the core's romset list when you pick them.":""),items:items});
+    var fi=rows.findIndex(function(b){ return b.name===focusName; }); if(fi>=0) modalSetFocus(fi,true);
+  }
+  /* verify an arcade BIOS zip (neogeo.zip, pgm.zip …) against the core's own list of what must be inside
+     → {ok, level:"ok"|"warn"|"bad", head, msg, summary} */
+  function checkBiosZip(sys,name,file){
+    var setName=name.replace(/\.zip$/i,"").toLowerCase();
+    return arcadeDbFor(sys).then(function(db){
+      var def=db&&db.biosSets?db.biosSets[setName]:null;
+      if(!def) return {ok:true,level:"ok",summary:""};
+      var setVer = sys.core==="mame" ? "MAME 0.78 / MAME 2003-Plus" : "FinalBurn Neo 1.0.0.03";
+      return zipEntries(file).then(function(entries){
+        var byName={}, byCrc={}; entries.forEach(function(e){ byName[e.name.split("/").pop().toLowerCase()]=e.crc; byCrc[e.crc]=1; });
+        var test=function(list){ var missing=[], wrong=[], ok=0; list.forEach(function(w){ var nm=w.split(":")[0], crc=w.split(":")[1]; var have=byName[nm.toLowerCase()]; if(have===undefined){ if(crc&&byCrc[crc]){ ok++; return; } missing.push(nm); } else if(crc&&have!==crc&&crc!=="00000000") wrong.push(nm); else ok++; }); return {missing:missing,wrong:wrong,ok:ok}; };
+        var req=test(def[1]), opt=test(def[2]);
+        var r={ok:true,level:"ok",desc:def[0],files:entries.length,reqOk:req.ok,reqTotal:def[1].length,optOk:opt.ok,optTotal:def[2].length};
+        r.summary=req.ok+"/"+def[1].length+" system files"+(def[2].length?" · "+opt.ok+"/"+def[2].length+" optional BIOS versions":"");
+        if(!req.missing.length && !req.wrong.length){
+          if(def[2].length && opt.ok===0) r.note="Only the default system ROM is present — fine for playing; the alternate region / Universe BIOS versions are missing, so the BIOS-region option will have no effect.";
+          return r;
+        }
+        // a required file is missing → the core refuses to start ANY game of this board. Say which version this zip is.
+        var otherSys=SYSTEMS.filter(function(o){ return o.arcade && o.core!==sys.core; })[0];
+        return (otherSys?arcadeDbFor(otherSys):Promise.resolve(null)).then(function(odb){
+          var odef=odb&&odb.biosSets?odb.biosSets[setName]:null, looks="";
+          if(odef){ var ot=test(odef[1]); if(odef[1].length && !ot.missing.length && !ot.wrong.length) looks = sys.core==="mame" ? "a current-MAME / FinalBurn Neo" : "a MAME 0.78 (MAME 2003)"; }
+          r.ok=false; r.level="bad"; r.head="NOT A USABLE "+name.toUpperCase()+" FOR "+(sys.core==="mame"?"MAME 2003-PLUS":"FINALBURN NEO");
+          r.msg=(looks?"This is <b>"+looks+" "+esc(name)+"</b> — it does not have the files this core opens: ":"The core opens these files from "+esc(name)+" and they are not in this zip"+(req.wrong.length?" with the right checksum":"")+": ")+
+                "<b>"+esc(req.missing.concat(req.wrong).slice(0,5).join(", "))+(req.missing.length+req.wrong.length>5?" …":"")+"</b>"+(req.ok?" ("+req.ok+" of "+def[1].length+" match)":"")+". "+
+                "Take <b>"+esc(name)+"</b> from a <b>"+setVer+"</b> romset — the same romset your game zips come from. Without it, "+esc(def[0])+" games only show the emulator menu.";
+          return r;
+        });
+      }).catch(function(){ return {ok:true,level:"ok",summary:""}; });
+    });
   }
   var biosInput=document.createElement("input"); biosInput.type="file"; biosInput.multiple=true; biosInput.style.display="none"; document.body.appendChild(biosInput);
   function pickBios(sys,expectName){
     biosInput.onchange=function(){
       var files=Array.prototype.slice.call(biosInput.files); biosInput.value="";
-      var jobs=files.map(function(f){
-        var name=(expectName&&files.length===1)?expectName:f.name;
-        var rec={key:sys.id+"/"+name,sysId:sys.id,fileName:name,size:f.size,blob:f};
-        BIOS[rec.key]=rec; return DB.put("bios",rec);
-      });
-      Promise.all(jobs).then(function(){ toast("BIOS INSTALLED: <b>"+files.length+"</b> FILE"+(files.length===1?"":"S")); openBios(sys); openLibrary(sys.id,true); });
+      var store=function(f,name,check){ var rec={key:sys.id+"/"+name,sysId:sys.id,fileName:name,size:f.size,blob:f,check:check||""}; BIOS[rec.key]=rec; return DB.put("bios",rec); };
+      var done=function(n){ toast("BIOS INSTALLED: <b>"+n+"</b> FILE"+(n===1?"":"S")); openBios(sys); openLibrary(sys.id,true); renderSystems(); };
+      // one arcade BIOS zip → verify it against the core's list before storing
+      if(sys.arcade && files.length===1 && /\.zip$/i.test(expectName||files[0].name)){
+        var f=files[0], name=expectName||f.name;
+        checkBiosZip(sys,name,f).then(function(v){
+          if(v.level==="ok"){ store(f,name,v.summary).then(function(){ done(1); if(v.note) toast(v.note,5000); }); return; }
+          var items=[
+            {label:"Pick another file",icon:ICON.file,color:"#7ed957",action:function(){ closeModalOnly(); pickBios(sys,expectName); }},
+            {label:v.ok?"Install anyway":"Install anyway (games will not start)",icon:ICON.chip,color:v.ok?"#ffb347":"#ff6a6a",action:function(){ closeModalOnly(); store(f,name,v.summary).then(function(){ done(1); }); }},
+            {label:"Cancel",icon:ICON.close,action:function(){ closeModalOnly(); openBios(sys,name); }}];
+          openModal({title:v.head,sub:esc(f.name)+" · "+esc(sys.name)+" · "+fmtBytes(f.size),html:'<div class="verdict '+v.level+'">'+v.msg+'<p class="hint">'+esc(v.summary)+' · '+v.files+' files in the zip</p></div>',items:items,onClose:function(){ openBios(sys,name); }});
+        });
+        return;
+      }
+      var jobs=files.map(function(f){ var name=(expectName&&files.length===1)?expectName:f.name; return store(f,name); });
+      Promise.all(jobs).then(function(){ done(files.length); });
     };
     biosInput.click();
   }
@@ -823,6 +920,7 @@
     modalSetFocus(0,true);
   }
   function closeModal(){ modal.classList.remove("open"); var f=modalOnClose; modalOnClose=null; if(f) f(); }
+  function closeModalOnly(){ modalOnClose=null; closeModal(); }     // close without running the onClose (= "dismissed") handler
   function modalSetFocus(i,silent){ if(!modalItems.length)return; i=(i+modalItems.length)%modalItems.length; if(i!==modalFocus&&!silent) blip("move"); modalFocus=i; $$("#modalBody .mi").forEach(function(e,k){ e.classList.toggle("focus",k===i); }); var el=$('#modalBody .mi[data-idx="'+i+'"]'); if(el) el.scrollIntoView({block:"nearest"}); }
   function modalActivate(i,dir){ var it=modalItems[i]; if(!it||it.disabled)return; blip("select"); if(it.value!==undefined && it.cycle){ it.cycle(dir||1); return; } if(it.action) it.action(); }
   byId("modalClose").addEventListener("click",closeModal);
@@ -878,7 +976,7 @@
       row("ADDED",game.embedded?'bundled with the app':fmtAgo(game.added))+row("STATS",'played '+(game.playCount||0)+'× · '+fmtDur(game.playTime)+' · last '+fmtAgo(game.lastPlayed))+
       (m.source?row("SOURCE",'<span class="src">'+esc(m.source)+'</span>'):'')+
       (m.romset?row("ROMSET",esc(m.romset)+'.zip'+(m.parent?' · clone of '+esc(m.parent):'')+(m.needsBios?' · needs '+esc(m.needsBios):'')):'')+
-      (m.romsetStatus&&m.romsetStatus!=="ok"?row("CHECK",'<span class="'+m.romsetStatus+'">'+esc(m.romsetNote||m.romsetStatus)+(m.missing&&m.missing.length?' — missing: '+esc(m.missing.slice(0,8).join(", "))+(m.missing.length>8?" …":""):"")+'</span>'):'')+'</div>';
+      (function(){ var rs=romsetBadge(game,gs); if(!rs) return m.romset&&m.romsetStatus&&m.romsetStatus!=="ok"?row("CHECK",'<span class="ok">game files complete · '+esc(m.needsBios||"BIOS")+' installed</span>'):""; return row("CHECK",'<span class="'+rs.cls+'">'+(rs.cls==="info"?'game files complete — needs <b>'+esc(m.needsBios)+'</b> (BIOS button of the library)':esc(m.romsetNote||m.romsetStatus)+(m.missing&&m.missing.length?' — missing: '+esc(m.missing.slice(0,8).join(", "))+(m.missing.length>8?" …":""):""))+'</span>'); })()+'</div>';
     openModal({title:game.name.toUpperCase(),sub:game.embedded?"Free game bundled with Recalbox OS Web — see LICENSE for the terms of its author.":"Game in your library",html:html,items:[
       {label:"Play",icon:ICON.play,color:"#7ed957",action:function(){ closeModal(); startGame(game); }},
       {label:game.fav?"Remove from favorites":"Add to favorites",icon:ICON.heart,color:"#ff5a7a",action:function(){ game.fav=!game.fav; persistRom(game); closeModal(); renderIfLibrary(); renderSystems(); }},
@@ -924,7 +1022,7 @@
       {label:"Export library list",sub:"Download a JSON with your game list & stats",icon:ICON.file,action:function(){ var data=ROMS.map(function(r){return {name:r.name,file:r.fileName,system:r.sysId,fav:r.fav,playCount:r.playCount,playTime:r.playTime,lastPlayed:r.lastPlayed};}); var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download="recalbox-web-library.json"; a.click(); }},
       {label:"Reset all settings",icon:ICON.reset,color:"#ff6a6a",action:function(){ settings=Object.assign({},DEFAULTS); saveSettings(); applyTheme(); rebuild(); toast("SETTINGS RESET"); }},
       {label:"Help & shortcuts",icon:ICON.keyboard,action:function(){ closeModal(); showHelp(); }},
-      {label:"About",sub:"Recalbox OS Web 2.2.2 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.2</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>Ships with a free library of homebrew, open-source and freeware games for every system (see roms/LICENSES.md for the authors and their terms) — no commercial ROMs. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
+      {label:"About",sub:"Recalbox OS Web 2.2.3 · EmulatorJS 4.2.3 (GPL-3.0) · offline",icon:ICON.info,action:function(){ closeModal(); openModal({title:"ABOUT",html:'<div class="about"><b>RECALBOX OS WEB 2.2</b> — a multi-system retro gaming frontend that runs as a normal desktop app.<br><br>Emulation by <b>EmulatorJS</b> (RetroArch cores compiled to WebAssembly, GPL-3.0). Frontend inspired by Recalbox, RetroBat &amp; EmulationStation.<br><br>Ships with a free library of homebrew, open-source and freeware games for every system (see roms/LICENSES.md for the authors and their terms) — no commercial ROMs. Add your own ROMs and BIOS files.<br><br><b>OFFLINE BY DESIGN</b> — all 25 emulator cores are bundled inside the application (like RetroArch / RetroPie); the app never opens a network connection.</div>',items:[{label:"OK",icon:ICON.check,action:closeModal}]}); }}
     ]});
   }
   /* ================= emulator cores (bundled, offline) ================= */
@@ -996,6 +1094,18 @@
         {label:"Install BIOS now",icon:ICON.chip,color:"#ffb347",action:function(){ closeModal(); openBios(sys); }},
         {label:"Try anyway",icon:ICON.play,action:function(){ closeModal(); startGame(game); }},
         {label:"Cancel",icon:ICON.close,action:closeModal}]});
+      return;
+    }
+    // arcade game whose BIOS set (neogeo.zip, pgm.zip …) is still not installed → the core would only show its menu
+    var gm=game.meta||{};
+    if(gm.needsBios && !BIOS[sys.id+"/"+gm.needsBios] && !game._biosWarned){
+      game._biosWarned=true;
+      openModal({title:"NEEDS "+gm.needsBios.toUpperCase(),sub:esc(game.name)+" · "+esc(sys.name),
+        html:'<div class="verdict info">The game files are complete, but <b>'+esc(game.name)+'</b> runs on the <b>'+esc(gm.biosDesc||gm.needsBios.replace(/\.zip$/,""))+'</b> system board and its system ROMs come in a separate <b>'+esc(gm.needsBios)+'</b> that is not installed yet. Without it the emulator cannot start the game.</div>',
+        items:[
+        {label:"Install "+gm.needsBios+" now",sub:"pick the file from a "+(sys.core==="mame"?"MAME 0.78":"FBNeo 1.0.0.03")+" romset — installed once for all "+(gm.biosDesc||"")+" games",icon:ICON.chip,color:"#7ed957",action:function(){ game._biosWarned=false; closeModal(); openBios(sys,gm.needsBios); }},
+        {label:"Try anyway",icon:ICON.play,action:function(){ closeModal(); startGame(game); }},
+        {label:"Cancel",icon:ICON.close,action:function(){ game._biosWarned=false; closeModal(); }}]});
       return;
     }
     if(!settings.controlsShown[sys.id] && !sys.collection){
@@ -1130,25 +1240,54 @@
   }
   /* Arcade cores never fail "loudly": when the romset is wrong RetroArch shows its own menu instead of the
      game. Recognise that from the core's log lines and replace it with an explanation + the fix. */
-  var coreLog=[], coreLogTap=null;
+  var coreLog=[], coreLogTap=null, coreBadFiles=[];
   function watchCoreLog(){
-    coreLog=[];
+    coreLog=[]; coreBadFiles=[];
     if(coreLogTap) return;
     // EmulatorJS forwards the core's stdout/stderr to console.log only when its debug flag is on
     // (window.EJS_DEBUG_XX, read when the instance is created) — so arcade launches run in debug mode
     // and this tap reads the libretro log lines.
     var orig=console.log.bind(console);
-    coreLogTap=function(){ try{ var t=arguments[0]; if(typeof t==="string"&&t.charAt(0)==="["){ if(coreLog.length<400) coreLog.push(t); if(/Failed to load content|Game driver not found|Required files are missing|is required$|None of those archives|WRONG CHECKSUMS|readroms failed/.test(t)) arcadeFailed(t); } }catch(e){} return orig.apply(console,arguments); };
+    coreLogTap=function(){ try{ var t=arguments[0]; if(typeof t==="string"&&t.charAt(0)==="["){ if(coreLog.length<400) coreLog.push(t);
+      // MAME 2003: a WRONG CHECKSUMS / WRONG LENGTH line is only a warning — the game still boots ("Warnings flagged during
+      // ROM loading"); the real failure is "Required files are missing" / NOT FOUND. So remember bad files, fail on the verdict.
+      var mb=/^\[libretro ERROR\] \[MAME 2003\+\] (\S+)\s+(WRONG CHECKSUMS|WRONG LENGTH|NOT FOUND)/.exec(t); if(mb&&!/^OPTIONAL/.test(mb[1])){ if(coreBadFiles.indexOf(mb[1])<0) coreBadFiles.push(mb[1]); }
+      if(/Failed to load content|Game driver not found|Required files are missing|is required$|None of those archives|readroms failed/.test(t)) arcadeFailed(t);
+      else if(/Warnings flagged during ROM loading/.test(t) && coreBadFiles.length) arcadeWarned();
+    } }catch(e){} return orig.apply(console,arguments); };
     console.log=coreLogTap;
   }
   var arcadeFailNotified=false;
+  /* which zip do the bad files belong to? (BIOS set files vs the game's own files) */
+  function badFileOrigin(m,sys){
+    var db=ARCADE_DB[sys.core==="mame"?"mame2003plus":"fbneo"], bios=(m.needsBios||"").replace(/\.zip$/,"");
+    var def=db&&db.biosSets&&bios?db.biosSets[bios]:null, biosNames={};
+    if(def) def[1].concat(def[2]).forEach(function(w){ biosNames[w.split(":")[0].toLowerCase()]=1; });
+    var fromBios=coreBadFiles.filter(function(f){ return biosNames[f.toLowerCase()]; }), fromGame=coreBadFiles.filter(function(f){ return !biosNames[f.toLowerCase()]; });
+    return {bios:fromBios,game:fromGame,biosZip:bios?bios+".zip":""};
+  }
+  /* MAME booted but flagged bad files: the game runs on wrong data (garbage graphics / no sound / hangs). Say so once. */
+  function arcadeWarned(){
+    if(arcadeFailNotified||!current) return;
+    var sys=findSys(current.sysId), m=current.meta||{}, o=badFileOrigin(m,sys);
+    // most of the game's OWN files wrong = a dump from another MAME version: it "boots" into garbage → treat as a failure
+    var db=ARCADE_DB[sys.core==="mame"?"mame2003plus":"fbneo"], entry=db&&db.sets?db.sets[(m.romset||(current.fileName||"").replace(/\.[^.]+$/,"")).toLowerCase()]:null;
+    var ownTotal=entry?entry[5].length:0;
+    if(m.romsetStatus==="bad" || (ownTotal && o.game.length>=Math.max(1,Math.ceil(ownTotal/2)))){ arcadeFailed("WRONG CHECKSUMS"); return; }
+    var msg = o.bios.length && !o.game.length ? 'YOUR <b>'+esc(o.biosZip.toUpperCase())+'</b> IS NOT THE '+(sys.core==="mame"?"MAME 0.78":"FBNEO 1.0.0.03")+' VERSION — '+esc(o.bios.slice(0,3).join(", "))+(o.bios.length>3?" …":"")+' have wrong checksums. Replace it from the BIOS button.'
+            : 'FILES WITH WRONG CHECKSUMS: <b>'+esc(coreBadFiles.slice(0,4).join(", "))+(coreBadFiles.length>4?" …":"")+'</b> — the game may glitch or hang.';
+    setTimeout(function(){ if(current) toast("&#9888; "+msg,9000); },2500);
+  }
   function arcadeFailed(line){
     if(arcadeFailNotified||!current) return; arcadeFailNotified=true;
-    var sys=findSys(current.sysId), m=current.meta||{}, set=(current.fileName||"").replace(/\.[^.]+$/,"");
+    var sys=findSys(current.sysId), m=current.meta||{}, set=(current.fileName||"").replace(/\.[^.]+$/,""), o=badFileOrigin(m,sys);
+    var biosInstalled = m.needsBios && BIOS[sys.id+"/"+m.needsBios];
     var why = /Game driver not found/.test(line) ? '"'+esc(set)+'" is not a romset name this core knows — arcade zips must keep their short MAME name (sf2.zip, pacman.zip …).'
-            : /is required/.test(line) ? 'A required file is missing: '+esc(line.replace(/.*with name /,"").replace(/ and CRC.*/,""))+(m.needsBios?' — install the BIOS set <b>'+esc(m.needsBios)+'</b> from the BIOS button.':' (BIOS or parent set missing, or a different romset version).')
-            : /WRONG CHECKSUMS/.test(line) ? 'The files inside the zip are from another MAME version (checksums differ). '+(sys.core==="mame"?"MAME 2003-Plus needs MAME 0.78 romsets.":"FinalBurn Neo needs its 1.0.0.03 romsets.")
-            : /Required files are missing|None of those archives|readroms failed/.test(line) ? 'Files the core needs are not inside the zip'+(m.missing&&m.missing.length?': <b>'+esc(m.missing.slice(0,6).join(", "))+'</b>':'')+'. Wrong romset version, or a clone without its parent set.'
+            : /is required/.test(line) ? 'A required file is missing: '+esc(line.replace(/.*with name /,"").replace(/ and CRC.*/,""))+(m.needsBios?(biosInstalled?' — your installed <b>'+esc(m.needsBios)+'</b> is not the version this core needs; replace it from the BIOS button.':' — install the BIOS set <b>'+esc(m.needsBios)+'</b> from the BIOS button.'):' (BIOS or parent set missing, or a different romset version).')
+            : /WRONG CHECKSUMS|WRONG LENGTH/.test(line) ? 'The files inside the zip are from another MAME version — '+(coreBadFiles.length?'<b>'+esc(o.game.slice(0,5).join(", "))+(o.game.length>5?" …":"")+'</b> have other checksums. ':'checksums differ. ')+(sys.core==="mame"?"MAME 2003-Plus needs MAME 0.78 romsets.":"FinalBurn Neo needs its 1.0.0.03 romsets.")
+            : /Required files are missing|None of those archives|readroms failed/.test(line) ? (o.bios.length && !o.game.length ? 'The game files are fine, but the installed <b>'+esc(o.biosZip)+'</b> is not the '+(sys.core==="mame"?"MAME 0.78":"FBNeo 1.0.0.03")+' version: <b>'+esc(o.bios.slice(0,4).join(", "))+(o.bios.length>4?" …":"")+'</b> '+(o.bios.length>1?"are":"is")+' missing or wrong in it. Replace it from the BIOS button of the library.'
+                : m.needsBios && !biosInstalled ? 'This game runs on the '+esc(m.biosDesc||m.needsBios.replace(/\.zip$/,""))+' board and its <b>'+esc(m.needsBios)+'</b> is not installed — add it from the BIOS button of the library.'
+                : 'Files the core needs are not inside the zip'+(coreBadFiles.length?': <b>'+esc(coreBadFiles.slice(0,6).join(", "))+'</b>':m.missing&&m.missing.length?': <b>'+esc(m.missing.slice(0,6).join(", "))+'</b>':'')+'. Wrong romset version, or a clone without its parent set.')
             : 'The core could not load this romset.';
     var show=function(){
       if(!current||!arcadeFailNotified) return;
@@ -1646,7 +1785,7 @@
   }
 
   window.addEventListener("unhandledrejection",function(ev){ var m=String((ev.reason&&ev.reason.message)||ev.reason||""); if(/Wake Lock|wakeLock/i.test(m)) ev.preventDefault(); });
-  window.RBW={version:"2.2.2",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,
+  window.RBW={version:"2.2.3",trace:TRACE,db:DB,cores:CORES,coreFiles:CORE_FILES,
     roms:function(){ return ROMS; }, systems:function(){ return SYSTEMS; },
     play:function(id){ var g=ROMS.find(function(r){return r.id===id;}); if(g){ if(view!=="library"||currentSys!==g.sysId) openLibrary(g.sysId); startGame(g); } return !!g; },
     open:function(sysId){ openLibrary(sysId); }, home:function(){ showSystems(); },

@@ -14,6 +14,12 @@ Windows SmartScreen / macOS Gatekeeper warn because the installers are not code-
 
 Nothing else to install: the installers contain all 25 emulator cores (~92 MB) and the free game library.
 
+## 🆕 What's new in 2.2.3
+
+- **Neo Geo games: the BIOS set is now a one-step install, not a confusing "missing files" list.** A complete `mslug3.zip` (or any Neo Geo / PGM set) without its `neogeo.zip` is reported as *ONE MORE FILE: NEOGEO.ZIP* — informational, the game is fine — with **Add the game and install `neogeo.zip` now** as the first choice. Until the BIOS is there the card says **NEEDS BIOS**, the library's BIOS chip reads *BIOS NEEDED · n games*, and pressing Play asks to install it instead of dropping into the emulator menu.
+- **The BIOS manager verifies arcade BIOS zips.** A current-MAME / FBNeo `neogeo.zip` given to MAME 2003-Plus (or a MAME 0.78 one given to FBNeo) is refused with the reason and the version that *is* needed; a minimal set is accepted; the installed row shows what it contains (*4/4 system files · 14/14 optional BIOS versions*). Only the required BIOS files count — alternate region / Universe BIOS ROMs are optional, exactly as in the cores.
+- Clones inherit their parent's BIOS (`garoup`, `kof98k` …) and are checked for both; MAME *WRONG CHECKSUMS* warnings no longer abort a game that actually boots (a toast names the bad zip instead), while dumps from another MAME version are still stopped with an explanation.
+
 ## 🆕 What's new in 2.2.2
 
 - **Arcade check — BIOS & parent sets.** Files that live in a BIOS set (`neogeo.zip`, `pgm.zip` …) or in a clone's parent game are no longer flagged as "missing" from the game zip. They are verified in the BIOS zip installed via the BIOS manager / the parent zip in the library, with precise verdicts: *needs `neogeo.zip`* (+ **Add and install now** shortcut), *installed `neogeo.zip` does not match this set*, *clone of `puckman` — parent set needed*.
