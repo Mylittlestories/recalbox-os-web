@@ -357,3 +357,9 @@ body[data-view="boot"] footer{display:none}
 .imp-ign{font-family:var(--body);font-size:12px;color:var(--muted);margin:6px 8px 0}
 .about .url{color:var(--blue);user-select:all;font-family:var(--body);font-weight:600}
 .about small{color:var(--muted);font-size:11.5px;line-height:1.5;display:block}
+
+/* romset rebuilder */
+.fixprog{display:flex;align-items:center;gap:10px}
+.fixprog .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--orange);animation:fixspin .8s linear infinite;flex:none}
+@keyframes fixspin{to{transform:rotate(360deg)}}
+.verdict.ok{border-color:rgba(126,217,87,.55);box-shadow:inset 3px 0 0 var(--green)}

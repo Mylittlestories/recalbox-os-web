@@ -55,6 +55,13 @@ Your games, BIOS, save states and settings are stored locally too — nothing ev
 
 ## 🆕 What's new
 
+### 2.2.5 — "Fix it": the arcade romset rebuilder — old MAME32 / newer sets rebuilt for the bundled cores, offline
+- **Why not a newer MAME core?** The question was asked and researched: the two arcade engines bundled here (MAME 2003-Plus, FinalBurn Neo) are the only arcade cores that exist as WebAssembly builds — EmulatorJS / libretro publish no mame2010 / mame2015 / current-MAME wasm, and the EmulatorJS maintainers themselves report that building one "does not work" ([EmulatorJS #830](https://github.com/EmulatorJS/EmulatorJS/issues/830)). So instead of changing the engines, the app now changes the *files* to fit them. [Details ↓](#-fix-it--the-arcade-romset-rebuilder)
+- **Fix it — identify the game and rebuild the zip.** Every arcade verdict (unknown name, files from another version, missing files, `.7z`) now starts with **Fix it**: the app identifies the game **by the content** of the archive (CRC32 of every file against the core's database, also looking *inside* files for joined / split / interleaved dumps), then rebuilds `<romset>.zip` exactly as the core wants it — files **renamed**, **cut out** of bigger files, **joined** from split halves (CRC arithmetic, no guessing), **interleaved / de-interleaved**, parent-set files **merged in** from the other zips of your drop or your library, the Neo Geo BIOS files accepted under their newer names. The result is verified checksum-by-checksum before it is stored; your original file is never modified.
+- **What is truly missing is named precisely** — file name, size and CRC32 of each absent chip — so a "PARTLY FIXED" set tells you exactly what to look for; small PROM / PLD files that old collections lacked are called out as such (the game usually boots without them). A `neogeo.zip` / `pgm.zip` found inside an old merged set is extracted and installed as the BIOS on the way.
+- Also reachable from the game menu (**Fix this romset**, with a *rebuilt from …* note and a **REBUILT** row in *Game info*) and from the launch-failure overlay (**F**). `.7z` archives are unpacked by the local extractor that ships with the emulator — still no network, no external tool.
+- `www/data/arcade/*.json` now carry the file sizes (third field) the rebuilder needs; regenerate with `node scripts/build-arcade-db.js`.
+
 ### 2.2.4 — BIOS files: verified against RetroBIOS, imported in one drop, Neo Geo converted for MAME 2003-Plus
 - **Every BIOS file is checksum-verified when you pick it** — offline, against a table built from the [RetroBIOS](https://abdess.github.io/retrobios/) catalogue (`www/data/bios-db.json`, 21 names / 47 known-good dumps). The BIOS manager row reads **verified ✓**; a wrong file is named for what it really is (*THIS IS NOT SCPH5502.BIN — its checksum is the one of scph5501.bin → Install it as scph5501.bin instead*); an unknown revision is flagged *unknown checksum — may work* instead of silently accepted. [Details ↓](#-bios-files--where-they-come-from-and-how-the-app-checks-them)
 - **One-drop BIOS import.** Drop a whole RetroBIOS pack, a RetroArch `system/` or Recalbox `bios/` folder — or any handful of files — anywhere on the window (or **BIOS → Import a BIOS folder / pack…**): each file is recognised by name, by RetroBIOS' own name (`GBA_bios.rom`, `SAT_1.00-(U+E).bin`, `Kickstart-v1.3…rom`, `MCD_eu_100.bin` …) or by checksum, renamed to what the core opens and routed to its system; arcade BIOS zips go to both arcade cores after the romset check. One click installs everything usable, the rest is listed as ignored.
@@ -260,10 +267,54 @@ Recalbox OS Web therefore **checks every arcade zip when you add it** against th
 - 🧩 **files from another MAME version** — compares names *and* CRCs from the zip directory: "the files inside do not match this romset";
 - 🪫 **BIOS / parent set** — Neo Geo, PGM, … games and clones of *split* sets keep part of their files in another zip (`neogeo.zip`, `pgm.zip`, the parent game). Those files are **not** expected inside the game zip: the check looks for them in the BIOS set installed via the library's **BIOS** button (and in the parent zip in the same library). A complete game that only lacks its BIOS set gets *ONE MORE FILE: NEOGEO.ZIP* with a one-step **add + install** path, a **NEEDS BIOS** badge until then, and a reminder at launch;
 - 🧾 **BIOS zips are verified too** — the BIOS manager compares a picked `neogeo.zip` / `pgm.zip` with the core's list: MAME 2003-Plus wants the MAME 0.78 files (`sp-s2.sp1`, `mame.sm1`, `mamelo.lo`, `sfix.sfx`), FinalBurn Neo the current ones (`sp-s3.sp1`, `sm1.sm1`, `sfix.sfix`, `000-lo.lo`) — the wrong one is refused with the reason. Alternate region / Universe BIOS ROMs are optional;
-- 📦 **`.7z`** — the arcade cores cannot read it; re-pack as `.zip`.
+- 📦 **`.7z`** — the arcade cores cannot read it; **Fix it** unpacks it locally and writes the `.zip`.
 
 Games that pass are added under their proper title (year and manufacturer in *Game info*); problems get a
-**WON'T RUN / INCOMPLETE** badge, and if a launch still fails the player shows the reason instead of the menu.
+**WON'T RUN / INCOMPLETE** badge, and if a launch still fails the player shows the reason instead of the menu —
+and every one of these verdicts offers **Fix it**, described next.
+
+## 🔧 Fix it — the arcade romset rebuilder
+
+<p align="center"><img src="www/img/romfix-verdict.png" width="49%" alt="verdict with Fix it"> <img src="www/img/romfix-fixed.png" width="49%" alt="FIXED: robby.zip"></p>
+
+**The problem.** "MAME32" collections from the early 2000s, romsets for MAME 0.1xx or for current MAME 0.2xx all hold
+the *same chip dumps* as the MAME 0.78 / FBNeo sets the bundled cores want — but cut, named and distributed
+differently. Over the years a file gets renamed to its chip label (`robby.1` → `rotox1.bin`), two halves are
+merged into one dump or one dump is split in two, byte-interleaved pairs become one file, clone/parent/BIOS
+files migrate between zips, and PROMs / PLDs are added to the set. The core opens files by name and CRC32 for
+*its* version, so the game "does not work": wrong file names, missing files.
+
+**A newer MAME engine is not an option** (there is no WebAssembly build of any MAME newer than 2003-Plus — see
+the 2.2.5 notes), so the app fixes the files instead, entirely offline:
+
+1. **Identify by content.** Every file of the dropped archive (`.zip` or `.7z`) is looked up by CRC32 + size in
+   the core's database (5 275 MAME 0.78 sets / 8 366 FBNeo sets, 48 000 / 59 000 distinct checksums). If little is
+   recognised as-is, the rebuilder also looks *inside* the files: aligned halves/quarters, even/odd byte and word
+   streams and pairwise joins of equal-size files are hashed and looked up too. The set that explains most of the
+   archive wins; the zip's own name only breaks ties. Other candidates are listed.
+2. **Plan each wanted file.** For every file the core expects (the game's own files plus the parent-set files a
+   split set inherits) the rebuilder searches a **pool** — the dropped archive, the other archives of the same
+   drop, every arcade zip already in your library (both arcade systems), the installed BIOS zips — and resolves it
+   as *as is*, *renamed*, *cut out of a bigger file*, *joined from parts* (found with CRC32 arithmetic, no data
+   read), *interleaved* / *de-interleaved*, or *newer dump the core accepts* (`sm1.sm1` for `mame.sm1` …).
+3. **Build and verify.** The rebuilt `<romset>.zip` gets the exact names of the core's set; already-compressed
+   entries are copied verbatim, derived data is deflated; every entry's CRC32 is checked against the database
+   before the zip is stored. The original file is untouched. When the archive also carries the board's BIOS
+   files (old merged sets do), `neogeo.zip` / `pgm.zip` … is built and installed as well.
+4. **Report the rest honestly.** *FIXED* means every file is there. *PARTLY FIXED* lists each absent file with
+   its name, size and CRC32, notes when it is only a small PROM / PLD (old collections lacked them; the game
+   generally boots) and tells you where such a file lives (`parent.zip`, the 0.78 / FBNeo set).
+
+<p align="center"><img src="www/img/romfix-partly.png" width="70%" alt="PARTLY FIXED — the missing PROM named with CRC32 and size"></p>
+
+Where it is offered: the first item of every arcade verdict when a zip is added; **Fix this romset** in the game
+menu (right-click / SPACE) for any arcade game already in the library — useful after you drop the parent zip or a
+better dump; **F** on the launch-failure overlay. *Game info* shows a **REBUILT** row with the origin and what
+was done.
+
+What it cannot do: invent data. A game that is not in the core's set at all (added to MAME after 0.78, or not
+driven by FBNeo) is reported as *NO KNOWN GAME INSIDE* with the advice to try the other arcade system; chips that
+are in none of your files stay missing — but you now know exactly which ones.
 
 ## 💾 BIOS files — where they come from and how the app checks them
 
@@ -369,11 +420,12 @@ also run the **"Build Recalbox OS Web"** workflow by hand from the Actions tab. 
 main.js                 Electron main (app:// protocol with COOP/COEP + CSP, network lockdown, core inventory)
 www/                    the app (frontend + EmulatorJS data)
   index.html            UI: boot · system view · game view · player · control center · dialogs
-  js/app.js             frontend logic (library DB, navigation, hotkeys, settings, BIOS manager)
+  js/app.js             frontend logic (library DB, navigation, hotkeys, settings, BIOS manager, Fix-it dialogs)
+  js/romfix.js          arcade romset rebuilder: CRC32 (+ combine), zip read/write, 7z via the local extractor, identify / plan / build
   css/                  theme + font
   img/                  logo.svg / banner.svg / icon-256.png + screenshots for this README
   data/                 EmulatorJS 4.2.3 runtime (stable release)
-  data/arcade/          MAME 2003-Plus + FBNeo romset databases (name → files/CRCs/BIOS) for the add-time check
+  data/arcade/          MAME 2003-Plus + FBNeo romset databases (name → files/CRCs/sizes/BIOS) for the add-time check and the rebuilder
   data/bios-db.json     BIOS checksum table (from the RetroBIOS catalogue, metadata only) — verification, aliases, routing
   data/cores/           bundled emulator cores + manifest.json (from `npm run cores`, not in git)
   roms/                 bundled free library: games + library.json (attributes) + LICENSES.md (credits)

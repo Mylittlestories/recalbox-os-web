@@ -14,6 +14,14 @@ Windows SmartScreen / macOS Gatekeeper warn because the installers are not code-
 
 Nothing else to install: the installers contain all 25 emulator cores (~92 MB) and the free game library.
 
+## 🆕 What's new in 2.2.5
+
+- **"Fix it" — the arcade romset rebuilder.** Old MAME32-era collections and newer MAME sets hold the same chip dumps as the MAME 0.78 / FBNeo sets the bundled cores need, just renamed, re-cut and re-distributed. Every arcade verdict (unknown name, files from another version, missing files, `.7z`) now starts with **Fix it**: the game is identified **by content** (CRC32 of every file — and of what the files can be cut / joined / de-interleaved into — against the core's database), then `<romset>.zip` is rebuilt exactly as the core wants it: files renamed, cut out of bigger files, joined from split halves, (de)interleaved, parent-set files merged in from the other zips of the drop or the library, Neo Geo BIOS files accepted under their newer names. Everything is verified checksum-by-checksum before it is stored; the original file is never modified.
+- **Missing files are named precisely** (name, size, CRC32) so a *PARTLY FIXED* set tells you exactly what to look for; small PROM / PLD files that old sets lacked are called out (the game generally boots without them). A BIOS set found inside an old merged zip is extracted and installed on the way.
+- Also available as **Fix this romset** in the game menu (with a *REBUILT* row in Game info) and with **F** on the launch-failure overlay. `.7z` archives are unpacked by the local extractor shipped with the emulator — still 100 % offline.
+- **Why not a newer MAME engine?** There is no WebAssembly build of any MAME newer than 2003-Plus (EmulatorJS / libretro ship none; the EmulatorJS maintainers report the build "does not work" — [EmulatorJS #830](https://github.com/EmulatorJS/EmulatorJS/issues/830)). The rebuilder is the way to run those collections here, without touching the engines or the app's behaviour.
+- Arcade databases now carry file sizes (`scripts/build-arcade-db.js`).
+
 ## 🆕 What's new in 2.2.4
 
 - **BIOS files are verified when you pick them** — offline, against a checksum table built from the [RetroBIOS](https://abdess.github.io/retrobios/) catalogue (21 names, 47 known-good dumps). Rows read **verified ✓**; a wrong file is named for what it really is (*THIS IS NOT SCPH5502.BIN → it is scph5501.bin → Install it as scph5501.bin instead*); an unknown revision is flagged *unknown checksum — may work* instead of being accepted silently.

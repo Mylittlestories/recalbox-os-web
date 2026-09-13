@@ -9,10 +9,13 @@
  *   FinalBurn Neo  : https://raw.githubusercontent.com/libretro/FBNeo/master/dats/FinalBurn Neo (ClrMame Pro XML, Arcade only).dat
  *
  * Output format (compact):
- *   sets:     { "<romset>": [description, year, manufacturer, parent, bios, ["file:crc32"…], ["inherited file:crc32"…]] }
+ *   sets:     { "<romset>": [description, year, manufacturer, parent, bios, ["file:crc32:size"…], ["inherited file:crc32:size"…]] }
  *     files      = what must be inside <romset>.zip itself
  *     inherited  = files that live in the BIOS set / parent set (merge="…" in the DAT) — checked there, not here
- *   biosSets: { "<bios>": [description, ["required file:crc32"…], ["optional file:crc32"…]] }
+ *   biosSets: { "<bios>": [description, ["required file:crc32:size"…], ["optional file:crc32:size"…]] }
+ *   The third field (size in bytes) is used by the romset rebuilder: a dump from another MAME version often carries
+ *   the same data cut differently (two halves vs one file, interleaved pairs …); the sizes tell the rebuilder which
+ *   pieces of the user's files can be concatenated/split to produce the file this core expects.
  *     What <bios>.zip (neogeo.zip, pgm.zip …) must contain for THIS core. Only the default system ROM is required —
  *     the alternate region / Universe BIOS ROMs are selectable extras the core does not insist on (MAME: the
  *     <biosset default="yes"> entry; FBNeo: sp-s3.sp1 + sm1.sm1 + sfix.sfix + 000-lo.lo, everything else BRF_OPT).
@@ -58,7 +61,7 @@ function parse(xml, id) {
       for (const r of b.matchAll(/<rom\s([^>]*)\/?>/g)) {
         const t = ' ' + r[1];
         if (attr(t, 'status') === 'nodump') continue;
-        const fname = attr(t, 'name'), entry = fname + ':' + attr(t, 'crc').toLowerCase(), alt = attr(t, 'bios');
+        const fname = attr(t, 'name'), entry = fname + ':' + attr(t, 'crc').toLowerCase() + ':' + (parseInt(attr(t, 'size'), 10) || 0), alt = attr(t, 'bios');
         let required;
         if (forced) required = forced.indexOf(fname) >= 0;
         else if (id === 'fbneo') required = true;                       // no flag info → conservative
@@ -73,7 +76,7 @@ function parse(xml, id) {
     for (const r of b.matchAll(/<rom\s([^>]*)\/?>/g)) {
       const t = ' ' + r[1];
       if (attr(t, 'status') === 'nodump') continue;
-      const entry = attr(t, 'name') + ':' + attr(t, 'crc').toLowerCase();
+      const entry = attr(t, 'name') + ':' + attr(t, 'crc').toLowerCase() + ':' + (parseInt(attr(t, 'size'), 10) || 0);
       // merge="…" = the file lives in the set named by romof (the BIOS set — neogeo/pgm/… — or the parent of a
       // clone). Such files are NOT expected inside this zip (split sets); they are checked against the BIOS/parent
       // zip instead. A merged set that carries them anyway is fine too.
